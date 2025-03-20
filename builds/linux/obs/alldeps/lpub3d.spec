@@ -120,7 +120,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4134
+Version: 2.4.9.4135
 Release: <B_CNT>%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -560,10 +560,7 @@ set -x
 set +x
 echo "Current working directory: $PWD"
 [ -f "../../SOURCES/complete.zip" ] && SrcPath=../../SOURCES || SrcPath=../../../SOURCES
-# list downloaded files
-echo "Downloaded files in $(readlink -e ${SrcPath}):"
-for file in $(cd ${SrcPath} && find . -type f -name "*.zip" -o -name "*.gz" -o -name "*.bz2"); do echo "- $file"; done
-# copy ldraw archive libraries
+# move ldraw archive libraries to extras
 for LDrawLibFile in \
   ${SrcPath}/complete.zip \
   ${SrcPath}/lpub3dldrawunf.zip \
@@ -572,16 +569,16 @@ for LDrawLibFile in \
   LibFile="$(basename ${LDrawLibFile})"
   if [ -f "${LDrawLibFile}" ]; then
     if [ "${LibFile}" = "complete.zip" ]; then
-      cp -f ${LDrawLibFile} ../BUILD || \
-      echo "Error: ${LibFile} copy to $(readlink -e ../BUILD) failed."
+      cp -f ${LDrawLibFile} ../ || \
+      echo "Error: ${LibFile} copy to $(readlink -e ../) failed."
     fi
     mv -f ${LDrawLibFile} mainApp/extras/ || \
-	echo "Error: ${LibFile} move to $(readlink -e mainApp/extras) failed."
+    echo "Error: ${LibFile} move to $(readlink -e mainApp/extras) failed."
   else
     echo "Error: ${LDrawLibFile} not found."
   fi
 done
-# Copy 3rd party renderer source archives and Qt5 libraries
+# move 3rd party renderer source archives and Qt5 libraries
 for TarballFile in \
   ${SrcPath}/ldglite.tar.gz \
   ${SrcPath}/ldview.tar.gz \
@@ -599,6 +596,15 @@ for TarballFile in \
     echo "Error: ${TarballFile} not found."
   fi
 done
+# copy version.info to utilities
+if [ -f "${SrcPath}/version.info" ]; then
+  cp -f ${SrcPath}/version.info builds/utilities
+  [ -f "builds/utilities/version.info" ] && \
+  echo "Copied version.info into $(readlink -e builds/utilities)" || \
+  echo "Error: version.info not copied to $(readlink -e builds/utilities)."
+else
+  echo "Error: ${SrcPath}/version.info not found."
+fi
 set -x
 %if 0%{?buildservice}
 # OBS Platform id and version
@@ -825,7 +831,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Thu Mar 20 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4134
+* Thu Mar 20 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4135
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
