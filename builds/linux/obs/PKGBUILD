@@ -2,7 +2,7 @@
 #  Last Update: March 20, 2025
 #  Copyright (C) 2017 - 2025 by Trevor SANDY
 pkgname=lpub3d
-pkgver=2.4.9.4142
+pkgver=2.4.9.4143
 pkgrel=1
 pkgdesc="An LDraw Building Instruction Editor"
 url="https://github.com/trevorsandy/lpub3d.git"
@@ -44,7 +44,6 @@ prepare() {
 	chmod a+x builds/utilities/CreateRenderers.sh && ./builds/utilities/CreateRenderers.sh
 	# location is ../src/${pkgname}-git
 	export QT_SELECT=qt5
-	export LP3D_BUILD_PKG=yes
 	export LDRAWDIR=${HOME}/ldraw
 	if [ -x /usr/bin/qmake ] ; then
 		QMAKE_EXEC=qmake

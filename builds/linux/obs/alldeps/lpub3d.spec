@@ -120,7 +120,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4142
+Version: 2.4.9.4143
 Release: <B_CNT>%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -707,8 +707,6 @@ export LPUB3D=%{name}
 export RPM_BUILD=true
 export RPM_STAGE=build
 export LDRAWDIR=${HOME}/ldraw
-# instruct qmake to install 3rd-party renderers
-export LP3D_BUILD_PKG=yes
 # set Qt5 Library for platforms that don't have Qt5 from qt5-5.9.3-gcc_64-el.tar.gz tarball
 %if 0%{?get_qt5}
 source builds/linux/obs/alldeps/GetQt5Libs.sh
@@ -831,7 +829,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4142
+* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4143
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047

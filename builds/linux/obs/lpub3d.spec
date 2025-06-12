@@ -1,7 +1,7 @@
 #
 # spec file for LPub3D package
 #
-# Last Update March 20, 2025
+# Last Update: June 12, 2025
 # Copyright © 2018 - 2025 Trevor SANDY
 # Using RPM Spec file examples by Thomas Baumgart, Peter Bartfai and others
 # This file and all modifications and additions to the pristine
@@ -82,7 +82,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4142
+Version: 2.4.9.4143
 Release: 1%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -239,8 +239,6 @@ export PLATFORM_VER=%{fedora}
 export LPUB3D=%{name}
 export RPM_BUILD=true
 export LDRAWDIR=${HOME}/ldraw
-# instruct qmake to install 3rd-party renderers
-export LP3D_BUILD_PKG=yes
 # set Qt5
 export QT_SELECT=qt5
 # 3rd-party renderers build-from-source requirements
@@ -319,7 +317,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4142
+* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4143
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
