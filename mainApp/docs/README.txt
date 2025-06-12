@@ -1,4 +1,4 @@
-LPub3D 2.4.9.134.4181 (12 06 2025 20:07:14)
+LPub3D 2.4.9.135.4182 (12 06 2025 20:08:20)
 
 Features, enhancements, fixes and changes
 ------------
@@ -15,6 +15,7 @@ Revisions:
 
 - Enhancement - Inconsistency with parts list shape inputs #805
 - Enhancement - Set annotation style attributes from context menu action #812
+- Enhancement - Update LDView renderer to version 4.6 #815
 - Change - Set annotation style attributes for fixed and extended types #811
 - HowTo - Set annotation style attributes #809
 - HowTo - Set theme check script in extras folder for Linux and macOS distros #806
