@@ -44,7 +44,9 @@ equals(GIT_DIR, undefined) {
         }
     }
 
-    VER_BASE_NAME = $$lower($$(LP3D_APP))
+    VER_BASE_NAME    = $$lower($$(LP3D_APP))
+    isEmpty(VER_BASE_NAME): \
+    VER_BASE_NAME    = lpub3d
     USE_GIT_VER_FILE = true
 
 } else {
@@ -57,7 +59,7 @@ equals(GIT_DIR, undefined) {
 
     # Check if we do not have a valid version number (i.e. no version tag found)
     isEmpty(GIT_VERSION) {
-        GIT_REVISION = 108
+        GIT_REVISION = 109
         GIT_SHA      = $$system($$GIT_BASE_COMMAND rev-parse --short HEAD 2> $$NULL_DEVICE)
         GIT_COMMIT   = $$system($$GIT_BASE_COMMAND rev-list --count HEAD 2> $$NULL_DEVICE)
         GIT_VERSION  = v$${VERSION}-$${GIT_REVISION}-$${GIT_SHA}
@@ -85,7 +87,7 @@ equals(GIT_DIR, undefined) {
         # Get commit count
         GIT_COMMIT = $$system($$GIT_BASE_COMMAND rev-list --count HEAD 2> $$NULL_DEVICE)
         isEmpty(GIT_COMMIT) {
-            GIT_COMMIT = 4155
+            GIT_COMMIT = 4156
             message("~~~ ERROR LPUB3D! GIT_COMMIT NOT DEFINED, USING $$GIT_COMMIT ~~~")
         }
 
@@ -120,20 +122,20 @@ equals(GIT_DIR, undefined) {
 
     # Get the git repository name
     GIT_BASE_NAME = $$system($$GIT_BASE_COMMAND rev-parse --show-toplevel 2> $$NULL_DEVICE)
-    VER_BASE_NAME = $$basename(GIT_BASE_NAME)
+    VER_BASE_NAME = $$lower($$basename(GIT_BASE_NAME))
     message("~~~ $${LPUB3D} USING GIT_BASE_NAME $$GIT_BASE_NAME ~~~")
 }
 
 if (equals(USE_GIT_VER_FILE, true)|equals(USE_VERSION_INFO_VAR, true)) {
     equals(USE_GIT_VER_FILE, true) {
-        GIT_VER_FILE = $$system_path($$PWD/builds/utilities/version.info)
+        GIT_VER_FILE = $$PWD/builds/utilities/version.info
 
         exists($$GIT_VER_FILE) {
             message("~~~ $${LPUB3D} GIT_DIR [$$GIT_DIR_ENV, USING VERSION_INFO FILE] $$GIT_VER_FILE ~~~")
             GIT_VERSION = $$cat($$GIT_VER_FILE, lines)
         } else {
             message("~~~ ERROR LPUB3D! $$GIT_DIR_ENV VERSION_INFO FILE $$GIT_VER_FILE NOT FOUND ~~~")
-            GIT_VERSION = $${VERSION}.108.4155.1fbd1487c
+            GIT_VERSION = $${VERSION}.109.4156.c68252935
             message("~~~ $${LPUB3D} GIT_DIR [$$GIT_DIR_ENV, USING VERSION] $$GIT_VERSION ~~~")
             GIT_VERSION ~= s/\./" "
         }
@@ -201,16 +203,14 @@ contains(BUILD_TYPE,continuous) {
     DEFINES += LP3D_CONTINUOUS_BUILD
 }
 
-if (contains(VER_BASE_NAME, $$lower("lpub3d"))|contains(VER_BASE_NAME, $$lower("lpub3dnext"))) {
-    contains(VER_BASE_NAME, $$lower("lpub3dnext")) {
-        message("~~~ $${LPUB3D} USING NEXT DEVEL BUILD VER_BASE_NAME $$VER_BASE_NAME ~~~")
-        DEFINES += LP3D_NEXT_BUILD
-    } else {
-        message("~~~ $${LPUB3D} USING CI DEVEL BUILD VER_BASE_NAME $$VER_BASE_NAME ~~~")
-        DEFINES += LP3D_DEVOPS_BUILD
-    }
+if (contains(VER_BASE_NAME, $$lower($${TARGET}))) {
+    message("~~~ $${LPUB3D} USING RELEASE BUILD VER_BASE_NAME: $$VER_BASE_NAME ~~~")
+} else:contains(VER_BASE_NAME, $$lower("$${TARGET}next")) {
+    message("~~~ $${LPUB3D} USING NEXT DEVEL BUILD VER_BASE_NAME: $$VER_BASE_NAME ~~~")
+    DEFINES += LP3D_NEXT_BUILD
 } else {
-    message("~~~ $${LPUB3D} USING RELEASE BUILD VER_BASE_NAME $$VER_BASE_NAME ~~~")
+    message("~~~ $${LPUB3D} USING CI DEVEL BUILD VER_BASE_NAME: $$VER_BASE_NAME ~~~")
+    DEFINES += LP3D_DEVOPS_BUILD
 }
 
 DEFINES += VER_MAJOR=\\\"$$VER_MAJOR\\\"
