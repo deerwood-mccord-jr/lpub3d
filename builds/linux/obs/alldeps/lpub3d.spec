@@ -112,15 +112,17 @@ License: GPL-2.0+
 BuildRequires: fdupes
 %endif
 
-# set custom directory paths
-%define _3rdexedir /opt/lpub3d/3rdParty
+# set directory paths
+%if 0%{?buildservice}
+%define _lp3d_3rd_exec_dir /usr/bin/lpub3d/3rdParty
+%endif
 %define _iconsdir %{_datadir}/icons
 
 # preamble
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4149
+Version: 2.4.9.4150
 Release: <B_CNT>%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -804,7 +806,7 @@ rm -rf $RPM_BUILD_ROOT
 #  {_datadir}/metainfo/*
 %{_datadir}/mime/packages/*
 %{_datadir}/applications/*
-%attr(755,-,-) %{_3rdexedir}/*
+%attr(755,-,-) %{_lp3d_3rd_exec_dir}/*
 %attr(644,-,-) %{_mandir}/man1/*
 %attr(644,-,-) %doc %{_docdir}/lpub3d/*
 %attr(644,-,-) %{_iconsdir}/hicolor/scalable/mimetypes/*
@@ -829,7 +831,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4149
+* Thu Jun 12 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4150
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
