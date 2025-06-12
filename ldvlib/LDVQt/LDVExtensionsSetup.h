@@ -18,6 +18,8 @@
 #include <GL/gl.h>
 #include <GL/glext.h>
 #include <GL/wglext.h>
+#include <TCFoundation/mystring.h>
+#include <TCFoundation/TCDefines.h>
 #include <TCFoundation/TCTypedValueArray.h>
 #include <TCFoundation/TCTypedObjectArray.h>
 #include <TCFoundation/TCStlIncludes.h>

@@ -23,10 +23,6 @@
 #define new DEBUG_CLIENTBLOCK
 #endif // _DEBUG
 
-#if defined(_MSC_VER) && _MSC_VER >= 1400 && defined(_DEBUG)
-#define new DEBUG_CLIENTBLOCK
-#endif
-
 // WGL_EXT_pixel_format
 PFNWGLGETPIXELFORMATATTRIBIVEXTPROC
 	LDVExtensionsSetup::sm_wglGetPixelFormatAttribivARB = NULL;
