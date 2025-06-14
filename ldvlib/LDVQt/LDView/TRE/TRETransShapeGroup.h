@@ -39,3 +39,4 @@ protected:
 };
 
 #endif // __TRETRANSSHAPEGROUP_H__
+

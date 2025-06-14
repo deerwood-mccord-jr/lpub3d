@@ -20,3 +20,4 @@ protected:
 };
 
 #endif // __TRETEXMAPPEDSHAPEGROUP_H__
+

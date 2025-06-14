@@ -20,3 +20,4 @@ void TCImageOptions::dealloc(void)
 {
 	TCObject::dealloc();
 }
+

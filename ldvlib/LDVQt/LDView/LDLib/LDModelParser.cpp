@@ -1432,3 +1432,4 @@ TCFloat LDModelParser::getSeamWidth(void)
 		return 0.0f;
 	}
 }
+

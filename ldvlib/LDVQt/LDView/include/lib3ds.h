@@ -792,3 +792,4 @@ extern LIB3DSAPI void lib3ds_matrix_camera(float m[4][4], float pos[3], float tg
 }
 #endif
 #endif
+

@@ -2144,3 +2144,4 @@ LDSnapshotTaker::ImageType LDSnapshotTaker::lastImageType(void)
 		return ITJpg;
 	}
 }
+
