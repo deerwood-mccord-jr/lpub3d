@@ -15,7 +15,6 @@ OTHER_FILES += \
     $$PWD/extras/titleAnnotations.lst \
     $$PWD/extras/ldglite.ini \
     $$PWD/extras/ldvExport.ini \
-    $$PWD/extras/ldvMessages.ini \
     $$PWD/extras/LPub3D_Npp_UDL.xml \
     $$PWD/docs/COPYING_BRIEF \
     $$PWD/docs/CREDITS.txt \
@@ -33,7 +32,7 @@ OTHER_FILES += \
     $$PWD/../builds/check/build_checks.sh \
     $$PWD/../builds/check/build_checks.mpd \
     $$PWD/../builds/linux/CreateDeb.sh \
-    $$PWD/../builds/linux/CreateLinux.sh \
+    $$PWD/../builds/linux/CreateLinuxMulitArch.sh \
     $$PWD/../builds/linux/CreatePkg.sh \
     $$PWD/../builds/linux/CreateRpm.sh \
     $$PWD/../builds/linux/docker-compose/docker-compose-cibuild-linux.yml \
@@ -100,7 +99,7 @@ OTHER_FILES += \
     $$PWD/../builds/utilities/json/complete.json \
     $$PWD/../builds/utilities/json/lpub3dldrawunf.json \
     $$PWD/../builds/utilities/json/lpub3dupdates.json \
-    $$PWD/../builds/utilities/mesa/build_mesa.sh \
+    $$PWD/../builds/utilities/mesa/build_osmesa.sh \
     $$PWD/../builds/utilities/mesa/glu.spec \
     $$PWD/../builds/utilities/mesa/Mesa.spec \
     $$PWD/../builds/utilities/mesa/osmesa-config \

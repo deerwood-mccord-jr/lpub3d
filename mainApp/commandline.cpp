@@ -104,6 +104,7 @@ int LPub::processCommandLine()
   bool processFile           = false;
   bool fadeSteps             = false;
   bool highlightStep         = false;
+// bool imageMatting          = false;
   bool resetSearchDirs       = false;
   bool StudStyleColourChanged= false;
   bool AutoEdgeColorChanged  = false;
@@ -425,6 +426,9 @@ int LPub::processCommandLine()
           }
       }
       else
+//      if (Param == QLatin1String("-im") || Param == QLatin1String("--image-matte"))
+//        imageMatting = true;
+//      else
       if (Param == QLatin1String("-of") || Param == QLatin1String("--output-file") || Param == QLatin1String("--pdf-output-file"))
         ParseString(Gui::saveFileName, true);
       else
@@ -462,7 +466,7 @@ int LPub::processCommandLine()
         if (ParseString(colourConfigFile, true))
         {
             colourConfigFile = QDir::toNativeSeparators(colourConfigFile);
-            if (QFileInfo::exists(colourConfigFile))
+            if (QFileInfo(colourConfigFile).exists())
             {
                 if (QDir::toNativeSeparators(Preferences::altLDConfigPath.toLower()) != colourConfigFile.toLower())
                     ColourConfigChanged = true;
@@ -616,6 +620,29 @@ int LPub::processCommandLine()
           Preferences::validFadeStepsColour = validColourName;
       }
   }
+
+  /* [Experimental] LDView Image Matting */
+//  if (imageMatting && Preferences::enableFadeSteps &&
+//      (Preferences::preferredRenderer == RENDERER_LDVIEW)) {
+//      Preferences::enableImageMatting = imageMatting;
+//      message = QString("Enable Image matte is ON.");
+//      emit messageSig(LOG_INFO,message);
+//    } else {
+//      QString message;
+//      if (imageMatting && !Preferences::enableFadeSteps) {
+//          message = QString("Image matte requires fade previous steps set to ON.");
+//          emit messageSig(LOG_ERROR,message);
+//        }
+
+//      if (imageMatting && (Preferences::preferredRenderer != RENDERER_LDVIEW)) {
+//          message = QString("Image matte requires LDView renderer.");
+//          emit messageSig(LOG_ERROR,message);
+//        }
+//      if (imageMatting) {
+//          message = QString("Image matte flag will be ignored.");
+//          emit messageSig(LOG_ERROR,message);
+//        }
+//    }
 
   if (highlightStep && highlightStep != Preferences::enableHighlightStep)
   {

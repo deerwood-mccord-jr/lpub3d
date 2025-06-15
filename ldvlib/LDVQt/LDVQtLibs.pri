@@ -1,17 +1,58 @@
+win32-msvc* {
+    BUILD_WORKER_VERSION = $$(LP3D_VSVERSION)
+    isEmpty(BUILD_WORKER_VERSION): BUILD_WORKER_VERSION = 2019
+    lessThan(BUILD_WORKER_VERSION, 2019) {
+        VSVER=vs2015
+    } else {
+        contains(QT_ARCH,i386): VSVER=vs2017
+        else: VSVER=vs2019
+    }
+    !contains(LOAD_LDV_LIBS,True) {
+        message("~~~ lib$${TARGET} BUILD WORKER: Visual Studio $$BUILD_WORKER_VERSION ~~~")
+        message("~~~ lib$${TARGET} $$upper($$QT_ARCH) MSVS LIBRARY VERSION: $$VSVER ~~~")
+    }
+}
+
+# Except for MSVC (uses pre-built), always build lib3ds
+BUILD_LDV_LIBS {
+    USE_LDV_3RD_PARTY_LIBS {
+        CONFIG += BUILD_3DS
+        CONFIG += BUILD_TINYXML
+        !USE_SYSTEM_JPEG: \
+        CONFIG += BUILD_JPEG
+        !USE_SYSTEM_PNG: \
+        CONFIG += BUILD_PNG
+        !USE_SYSTEM_GL2PS: \
+        CONFIG += BUILD_GL2PS
+        !USE_SYSTEM_MINIZIP: \
+        CONFIG += BUILD_MINIZIP
+        !USE_SYSTEM_ZLIB: \
+        CONFIG += BUILD_ZLIB
+    } else {
+        win32-msvc*: \
+        CONFIG += BUILD_GL2PS BUILD_TINYXML
+        else: \
+        CONFIG += BUILD_3DS
+    }
+}
+
+isEmpty(VER_LDVIEW): \
+VER_LDVIEW = ldview-4.6
+
 # ==LDVQt LOAD_LDV_HEADERS=====================
 
 contains(LOAD_LDV_HEADERS,True) {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     BUILD_LDV_LIBS {
-        VER_LDVIEW_DIR_PATH    = LDView
-        VER_LDVIEW_INCLUDE     = $${VER_LDVIEW_DIR_PATH}
+        VER_LDVIEW_DIR_PATH = $$PWD/LDView
+        VER_LDVIEW_INCLUDE  = $${VER_LDVIEW_DIR_PATH}
         VER_LDVIEW_THIRD_PARTY = $${VER_LDVIEW_DIR_PATH}/3rdParty
     } else {
-        VER_LDVIEW_INCLUDE     = $${THIRD_PARTY_DIST_DIR_PATH}/$$VER_LDVIEW/include
+        VER_LDVIEW_INCLUDE = $${THIRD_PARTY_DIST_DIR_PATH}/$$VER_LDVIEW/include
         VER_LDVIEW_THIRD_PARTY = $${VER_LDVIEW_INCLUDE}/3rdParty
     }
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    # Header source path
+    # Header soruce path
     equals(VER_USE_LDVIEW_DEV,True) {
         isEmpty(LDVHDRDIR):LDVHDRDIR       = $${VER_LDVIEW_DEV_REPOSITORY}/include
         isEmpty(LDV3RDHDRDIR):LDV3RDHDRDIR = $$LDVHDRDIR
@@ -152,11 +193,11 @@ contains(LOAD_LDV_LIBS,True) {
     # Set library names, source paths and local paths
     win32-msvc* {
         # library name
-        LDLIB_LIB        = -lLDLib$${POSTFIX}
-        LDEXPORTER_LIB   = -lLDExporter$${POSTFIX}
-        LDLOADER_LIB     = -lLDLoader$${POSTFIX}
-        TRE_LIB          = -lTRE$${POSTFIX}
-        TCFOUNDATION_LIB = -lTCFoundation$${POSTFIX}
+        LDLIB_LIB        = -lLDLib
+        LDEXPORTER_LIB   = -lLDExporter
+        LDLOADER_LIB     = -lLDLoader
+        TRE_LIB          = -lTRE
+        TCFOUNDATION_LIB = -lTCFoundation
 
         GL2PS_LIB        = -lgl2ps
         TINYXML_LIB      = -ltinyxml_STL
@@ -179,11 +220,11 @@ contains(LOAD_LDV_LIBS,True) {
 
         # source paths
         BUILD_LDV_LIBS {
-            LDLIB_SRC        = $${LDVLIBDIR}/LDLib/$${DESTDIR}/LDLib.lib
-            LDEXPORTER_SRC   = $${LDVLIBDIR}/LDExporter/$${DESTDIR}/LDExporter.lib
-            LDLOADER_SRC     = $${LDVLIBDIR}/LDLoader/$${DESTDIR}/LDLoader.lib
-            TRE_SRC          = $${LDVLIBDIR}/TRE/$${DESTDIR}/TRE.lib
-            TCFOUNDATION_SRC = $${LDVLIBDIR}/TCFoundation/$${DESTDIR}/TCFoundation.lib
+            LDLIB_SRC        = $${LDVLIBDIR}/LDLib/$${DESTDIR}/LDLib$${POSTFIX}.lib
+            LDEXPORTER_SRC   = $${LDVLIBDIR}/LDExporter/$${DESTDIR}/LDExporter$${POSTFIX}.lib
+            LDLOADER_SRC     = $${LDVLIBDIR}/LDLoader/$${DESTDIR}/LDLoader$${POSTFIX}.lib
+            TRE_SRC          = $${LDVLIBDIR}/TRE/$${DESTDIR}/TRE$${POSTFIX}.lib
+            TCFOUNDATION_SRC = $${LDVLIBDIR}/TCFoundation/$${DESTDIR}/TCFoundation$${POSTFIX}.lib
 
             GL2PS_SRC        = $${LDV3RDLIBDIR}/gl2ps/$${DESTDIR}/gl2ps.lib
             TINYXML_SRC      = $${LDV3RDLIBDIR}/tinyxml/$${DESTDIR}/tinyxml_STL.lib
@@ -393,17 +434,20 @@ contains(LOAD_LDV_LIBS,True) {
         LDV_COPY_CMD    = cp -f
         LDV_CONCAT_CMD  = cat
     }
-    # LDV_LDVIEW_RESOURCE_DIR, LDV_EXPORT_RESOURCE_DIR, LDV_LDVQT_DIR and LDV_MESSAGES_INI defined in mainApp.pro
-    LDV_LDVIEW_MESSAGES = $$shell_path( $$absolute_path( $${LDV_LDVIEW_RESOURCE_DIR}/LDViewMessages.ini ) )
+    #LDV_LDVIEW_RESOURCE_DIR, LDV_EXPORT_RESOURCE_DIR and LDV_MESSAGES_INI defined in mainApp.pro
+    LDV_MESSAGES        = $$shell_path( $$absolute_path( $${LDV_LDVIEW_RESOURCE_DIR}/LDViewMessages.ini ) )
     LDV_EXPORT_MESSAGES = $$shell_path( $$absolute_path( $${LDV_EXPORT_RESOURCE_DIR}/LDExportMessages.ini ) )
-    LDV_WIDGET_MESSAGES = $$shell_path( $$absolute_path( $${LDV_LDVQT_DIR}/LDVWidgetMessages.ini ) )
+    LDV_WIDGET_MESSAGES = $$shell_path( $$absolute_path( $$PWD/LDVWidgetMessages.ini ) )
     LDV_CONCAT_MESSAGES = $$shell_path( $$absolute_path( $$_PRO_FILE_PWD_/extras/$$LDV_MESSAGES_INI ) )
+    #message("~~~ DEBUG_$$upper($${TARGET}) LDV_CONCAT_MESSAGES: $$LDV_CONCAT_MESSAGES ~~~ ")
+    #message("~~~ DEBUG_$$upper($${TARGET}) LDV_LDVIEW_RESOURCE_DIR: $$LDV_LDVIEW_RESOURCE_DIR ~~~ ")
+    #message("~~~ DEBUG_$$upper($${TARGET}) LDV_EXPORT_RESOURCE_DIR: $$LDV_EXPORT_RESOURCE_DIR ~~~ ")
     LDV_CONCAT_MESSAGES_CMD = \
-    $$LDV_CONCAT_CMD $$LDV_LDVIEW_MESSAGES $$LDV_EXPORT_MESSAGES $$LDV_WIDGET_MESSAGES > $$LDV_CONCAT_MESSAGES
+    $$LDV_CONCAT_CMD $$LDV_MESSAGES $$LDV_EXPORT_MESSAGES $$LDV_WIDGET_MESSAGES > $$LDV_CONCAT_MESSAGES
     # When compiling from QtCreator, add ldvMessages.ini to destination directory extras folder - except for macOS
     contains(DEVL_LDV_MESSAGES_INI,True) {
         LDV_MESSAGES_DEVL = $$shell_path( $${OUT_PWD}/$${DESTDIR}/extras/$$LDV_MESSAGES_INI )
-        message("~~~ $${LPUB3D} COPY LDV_MESSAGES_INI TO: ./$${DESTDIR}/extras/$$LDV_MESSAGES_INI ~~~")
+        message("~~~ $${LPUB3D} COPY LDVMESSAGES.INI TO: ./$${DESTDIR}/extras/$$LDV_MESSAGES_INI ~~~")
         LDV_CONCAT_MESSAGES_CMD += \
         $$escape_expand(\n\t) \
         $$LDV_COPY_CMD \
@@ -414,13 +458,13 @@ contains(LOAD_LDV_LIBS,True) {
     ldvmsg_concat_msg.commands = @echo Project MESSAGE: ~~~ $${LPUB3D} Creating $${TARGET} $${LDV_MESSAGES_INI}... ~~~
     ldvmsg_concat.target       = ConcatenateMessages
     ldvmsg_concat.commands     = $$LDV_CONCAT_MESSAGES_CMD
-    ldvmsg_concat.depends      = $${LDV_LDVIEW_MESSAGES} \
+    ldvmsg_concat.depends      = $${LDV_MESSAGES} \
                                  $${LDV_EXPORT_MESSAGES} \
                                  $${LDV_WIDGET_MESSAGES} \
                                  ConcatProjectMessage
 
     QMAKE_EXTRA_TARGETS       += ldvmsg_concat ldvmsg_concat_msg
-    PRE_TARGETDEPS            += ConcatenateMessages
+    PRE_TARGETDEPS            += $$LDV_CONCAT_MESSAGES
     QMAKE_CLEAN               += $$LDV_CONCAT_MESSAGES
 }
 # END LPub3D LOAD_LDV_LIBS

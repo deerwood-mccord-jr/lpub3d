@@ -1,6 +1,6 @@
 #!/bin/bash
 # Trevor SANDY
-# Last Update June 12, 2025
+# Last Update March 17, 2025
 # Copyright (C) 2022 - 2025 by Trevor SANDY
 #
 # This script is run from a Docker container call
@@ -124,6 +124,9 @@ cd $BUILD_DIR || exit 1
 export LP3D_DIST_DIR_PATH=${LP3D_DIST_DIR_PATH:-/dist/${LP3D_BASE}_${LP3D_ARCH}}
 export LP3D_3RD_DIST_DIR=${LP3D_3RD_DIST_DIR:-lpub3d_linux_3rdparty}
 export LPUB3D=${LPUB3D:-lpub3d}
+export LP3D_VER_LDGLITE=ldglite-1.3
+export LP3D_VER_LDVIEW=ldview-4.5
+export LP3D_VER_POVRAY=lpub3d_trace_cui-3.8
 export LDRAWDIR_ROOT=~
 export LDRAWDIR=~/ldraw
 export WD=$PWD
@@ -134,7 +137,6 @@ export DOCKER=${DOCKER:-true}
 export LP3D_NO_DEPS=${LP3D_NO_DEPS:-true}
 export LP3D_LOG_PATH=${LP3D_LOG_PATH:-/out}
 export LP3D_NO_CLEANUP=${LP3D_NO_CLEANUP:-true}
-LP3D_GITHUB_URL="https://github.com/trevorsandy"
 
 [ -n "${BUILD_OPT}" ] && Info "BUILD OPTION.......${BUILD_OPT}" || :
 [ -n "${LPUB3D}" ] && Info "SOURCE DIR.........${LPUB3D}" || :
@@ -152,21 +154,17 @@ else
   Info "PRE-PACKAGE CHECK..$([ -n "${LP3D_PRE_PACKAGE_CHECK}" ] && echo "true" || echo "false")"
 fi
 
-# LDraw library archives
-ldrawLibFiles=(complete.zip lpub3dldrawunf.zip tenteparts.zip vexiqparts.zip)
-
 # Download LDraw library archive files if not available
-l=Log
 Info && Info "Checking LDraw archive libraries..."
-LP3D_LIBS_BASE="${LP3D_GITHUB_URL}/lpub3d_libs/releases/download/v1.0.1"
-[[ ! -L "/dist" && ! -d "/dist" ]] && mkdir -p "/dist" || :
-for libFile in "${ldrawLibFiles[@]}"; do
-  if [ ! -f "/dist/${libFile}" ]; then
-    echo -n "downloading ${libFile} into ${BUILD_DIR}..."
-    (wget ${LP3D_LIBS_BASE}/${libFile} -O /dist/${libFile}) >$l.out 2>&1 && rm $l.out
-    [ -f $l.out ] && echo "failed." && tail -80 $l.out || echo "ok."
-  fi
-done
+[[ ! -L "$/dist" && ! -d "/dist" ]] && mkdir -p "/dist" || :
+[ ! -f "/dist/lpub3dldrawunf.zip" ] && \
+wget https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/lpub3dldrawunf.zip -O /dist/lpub3dldrawunf.zip || :
+[ ! -f "/dist/complete.zip" ] && \
+wget https://library.ldraw.org/library/updates/complete.zip -O /dist/complete.zip || :
+[ ! -f "/dist/tenteparts.zip" ] && \
+wget https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/tenteparts.zip -O /dist/tenteparts.zip || :
+[ ! -f "/dist/vexiqparts.zip" ] && \
+wget https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/vexiqparts.zip -O /dist/vexiqparts.zip || :
 
 # If not AppImage build, source package build script and exit
 if [[ "${LP3D_APPIMAGE}" != "true" ]]; then
@@ -196,11 +194,18 @@ if [[ "${LP3D_APPIMAGE}" != "true" ]]; then
   esac
 
   # Copy LDraw libraries to package source path
-  for libFile in "${ldrawLibFiles[@]}"; do
-    [ ! -f "${pkgsrcdir}/${libFile}" ] && \
-    (cd ${pkgsrcdir} && cp -af /dist/${libFile} .) || \
-    Info "${pkgsrcdir}/${libFile} exists. Nothing to do."
-  done
+  [ ! -f "${pkgsrcdir}/lpub3dldrawunf.zip" ] && \
+  (cd ${pkgsrcdir} && cp -af /dist/lpub3dldrawunf.zip .) || \
+  Info "${pkgsrcdir}/lpub3dldrawunf.zip exists. Nothing to do."
+  [ ! -f "${pkgsrcdir}/complete.zip" ] && \
+  (cd ${pkgsrcdir} && cp -af /dist/complete.zip .) || \
+  Info "${pkgsrcdir}/complete.zip exists. Nothing to do."
+  [ ! -f "${pkgsrcdir}/tenteparts.zip" ] && \
+  (cd ${pkgsrcdir} && cp -af /dist/tenteparts.zip .) || \
+  Info "${pkgsrcdir}/tenteparts.zip exists. Nothing to do."
+  [ ! -f "${pkgsrcdir}/vexiqparts.zip" ] && \
+  (cd ${pkgsrcdir} && cp -af /dist/vexiqparts.zip .) || \
+  Info "${pkgsrcdir}/vexiqparts.zip exists. Nothing to do."
 
   # Link lpub3d_linux_3rdparty to package build source path
   LP3D_TD=${WD}/${pkgblddir}/${LP3D_3RD_DIST_DIR}
@@ -231,7 +236,7 @@ if [ "${TRAVIS}" != "true" ]; then
      cp -rf /in/. .
    else
      Info "Download source to ${BUILD_DIR}/..."
-     git clone ${LP3D_GITHUB_URL}/${LPUB3D}.git
+     git clone https://github.com/trevorsandy/${LPUB3D}.git
      mv -f ./${LPUB3D}/.[!.]* . && mv -f ./${LPUB3D}/* . && rm -rf ./${LPUB3D}
    fi
 else

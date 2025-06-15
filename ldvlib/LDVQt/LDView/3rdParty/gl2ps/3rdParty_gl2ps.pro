@@ -10,26 +10,12 @@ message("~~~ lib$${TARGET}.$${EXT_S} LIBRARY - $${BUILD} ~~~")
 DEFINES += GL2PS_HAVE_ZLIB \
            GL2PS_HAVE_LIBPNG
 
-INCLUDEPATH += $$_PRO_FILE_PWD_/../libpng
-macx: INCLUDEPATH += $$_PRO_FILE_PWD_/../libpng/MacOSX
-
-# use libpng14 or higher. Ubunu's default is libpng12
-USE_LDV_3RD_PARTY_LIBS {
-    PNG_LIBDIR  = $$OUT_PWD/../libpng/$$DESTDIR
-    if (mingw:ide_qtcreator)|win32-msvc*: \
-    LINK_CMD = cd $${PNG_LIBDIR} & if not exist \"libpng.a\" \( mklink libpng.a libpng16.a \)
-    else: \
-    LINK_CMD = cd $${PNG_LIBDIR}; if ! test -f libpng.a; then ln -s libpng16.a libpng.a; fi
-    linkpng.target = linklibpng
-    linkpng.depends = $${PNG_LIBDIR}/libpng16.a
-    linkpng.commands = $${LINK_CMD}
-    QMAKE_EXTRA_TARGETS += linkpng
-    PRE_TARGETDEPS += linklibpng
-    LIBS += -L$${PNG_LIBDIR} $${PNG_LIBDIR}/libpng.a
+BUILD_PNG {
+    INCLUDEPATH += $$_PRO_FILE_PWD_/../libpng
+    macx: \
+    INCLUDEPATH += $$_PRO_FILE_PWD_/../libpng/MacOSX
 } else {
-    macx: LIBDIR_ = $$_PRO_FILE_PWD_/../lib/MacOSX
-    else: LIBDIR_ = $$_PRO_FILE_PWD_/../lib/Linux/$$QT_ARCH
-    LIBS += $${LIBDIR_}/libpng.a -L$${LIBDIR_}
+    INCLUDEPATH += $${LIBS_INC}
 }
 
 # Input

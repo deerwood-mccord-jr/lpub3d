@@ -2,10 +2,10 @@ Format: 1.0
 Source: lpub3d
 Binary: lpub3d
 Architecture: any
-Version: 2.4.9.4231
+Version: 2.4.9.4232
 Maintainer: Trevor SANDY <trevor.sandy@gmail.com>
 Homepage: https://trevorsandy.github.io/lpub3d/
-Standards-Version: 3.9.8
+Standards-Version: 3.9.7
 Build-Depends: debhelper (>= 4.1.16), qtbase5-dev, qt5-qmake, libqt5opengl5-dev, libgl1-mesa-dev, libpng-dev, libjpeg-dev, zlib1g-dev, unzip
 Debtransform-Tar: lpub3d-git.tar.gz
 Files:

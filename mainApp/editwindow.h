@@ -411,10 +411,10 @@ private:
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-class TextEditorLineNumberArea : public QWidget
+class LineNumberArea : public QWidget
 {
 public:
-    TextEditorLineNumberArea(TextEditor *editor) : QWidget(editor)
+    LineNumberArea(TextEditor *editor) : QWidget(editor)
     {
         textEditor = editor;
     }

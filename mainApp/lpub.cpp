@@ -1175,7 +1175,7 @@ bool Gui::continuousPageDialog(PageDirection d)
               QRegExp errorRx(">ERROR<");
               QRegExp fatalRx(">FATAL<");
               QRegExp warnRx(">WARNING<");
-              for (QString &item : Gui::messageList)
+              for (const QString &item : Gui::messageList)
                   if (item.contains(errorRx) || item.contains(fatalRx))
                       errorSet++;
                   else if (! warnSet && item.contains(warnRx))
@@ -4219,7 +4219,7 @@ bool Gui::installRenderer(int which)
         return result;
     }
     rendererDownload->getDownloadReturn(rendererArchive);
-    if (!QFileInfo::exists(rendererArchive)) {
+    if (!QFileInfo(rendererArchive).exists()) {
         return result;
     }
 
@@ -4319,7 +4319,7 @@ void Gui::loadLDSearchDirParts(bool Process, bool OnDemand, bool Update, bool fi
   int partCount = 0;
   int searchDirs = gui->partWorkerLDSearchDirs.getUpdateSearchDirs().count();
   if (searchDirs > 1)
-      for (QString &dirPath : gui->partWorkerLDSearchDirs.getUpdateSearchDirs())
+      for (QString const &dirPath : gui->partWorkerLDSearchDirs.getUpdateSearchDirs())
           partCount += ArchiveParts::ProcessedParts(dirPath);
   if (searchDirs) {
       message = tr("Archiving %1. Please wait...").arg(partCount > 1 ? QString("%1 search directory parts").arg(partCount) : tr("search directory"));
@@ -4448,7 +4448,7 @@ void Gui::refreshLDrawUnoffParts() {
     }
     QString newarchive;
     libraryDownload->getDownloadReturn(newarchive);
-    if (!QFileInfo::exists(newarchive)) {
+    if (!QFileInfo(newarchive).exists()) {
         return;
     }
 
@@ -4615,7 +4615,7 @@ void Gui::refreshLDrawOfficialParts() {
     }
     QString newarchive;
     libraryDownload->getDownloadReturn(newarchive);
-    if (!QFileInfo::exists(newarchive)) {
+    if (!QFileInfo(newarchive).exists()) {
         return;
     }
 
@@ -8082,7 +8082,7 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
   }
 
   if (Preferences::ldSearchDirs.size() > 0) {
-      for (QString &searchDir : Preferences::ldSearchDirs)
+      for (const QString &searchDir : Preferences::ldSearchDirs)
         textEditSearchDirs->appendPlainText(searchDir);
   }
 
@@ -8126,7 +8126,7 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
     if (searchDirs.size() && searchDirs != Preferences::ldSearchDirs) {
       QStringList validDirs, invalidDirs, newDirs;
 
-      for (QString &searchDir : searchDirs) {
+      for (const QString &searchDir : searchDirs) {
 
         // empty line with carriage return
         if (searchDir == "")
@@ -8135,7 +8135,7 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
         bool match = false;
         const QString dir = QDir::toNativeSeparators(searchDir);
 
-        for (QString &ldDir : Preferences::ldSearchDirs) {
+        for (const QString &ldDir : Preferences::ldSearchDirs) {
           if (dir.toLower() == ldDir.toLower()) {
             match = true;
             break;
@@ -8146,7 +8146,7 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
           validDirs << dir;
         } else {
           match = false;
-          for (QString &excludedDir : excludedSearchDirs) {
+          for (const QString &excludedDir : excludedSearchDirs) {
             if (dir.toLower() == excludedDir.toLower()) {
               invalidDirs << dir;
               match = true;
@@ -8154,7 +8154,7 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
             }
           }
           if (!match) {
-            if (QFileInfo::exists(dir)) {
+            if (QFileInfo(dir).exists()) {
               newDirs << dir;
               validDirs << dir;
             } else {
@@ -8170,14 +8170,14 @@ void LDrawSearchDirDialog::getLDrawSearchDirDialog()
         const QString message = tr("The search directory list contains excluded or invalid paths which will not be saved.");
         QMessageBox::warning(dialog, tr("Search Directories"), QString("%1<br>%2").arg(message).arg(invalidDirs.join("<br>")));
         emit gui->messageSig(LOG_INFO, message);
-        for (QString &dir : invalidDirs) {
+        for (const QString &dir : invalidDirs) {
           emit gui->messageSig(LOG_INFO, QString("    - %1").arg(dir));
         }
       }
 
       if (!validDirs.isEmpty()) {
         emit gui->messageSig(LOG_INFO, tr("Updated LDraw Directories:"));
-        for (QString &dir : validDirs) {
+        for (const QString &dir : validDirs) {
           emit gui->messageSig(LOG_INFO,QString("    - %1").arg(dir));
         }
       }
@@ -8213,7 +8213,7 @@ void LDrawSearchDirDialog::buttonClicked()
       gui->partWorkerLDSearchDirs.resetSearchDirSettings();
       textEditSearchDirs->clear();
 
-      for (QString &searchDir : Preferences::ldSearchDirs)
+      for (const QString &searchDir : Preferences::ldSearchDirs)
         textEditSearchDirs->appendPlainText(searchDir);
 
       box.setIcon (QMessageBox::Information);
@@ -8225,7 +8225,7 @@ void LDrawSearchDirDialog::buttonClicked()
   } else if (sender() == pushButtonAddDirectory) {
     const QString ldrawPath = Preferences::ldrawLibPath;
     const QString result = QDir::toNativeSeparators(QFileDialog::getExistingDirectory(dialog, tr("Select Parts Directory"), QString("%1/%2").arg(ldrawPath).arg("unofficial")));
-    for (QString &excludedDir : excludedSearchDirs) {
+    for (const QString &excludedDir : excludedSearchDirs) {
       if (result.toLower() == excludedDir.toLower()) {
           box.setIcon (QMessageBox::Warning);
           box.setWindowTitle(tr ("Invalid Search Directory"));

@@ -345,6 +345,7 @@ class Preferences
     static bool    enableFadeSteps;
     static bool    fadeStepsUseColour;
 
+    static bool    enableImageMatting;
     static bool    enableHighlightStep;
     static int     highlightStepLineWidth;
     static bool    highlightFirstStep;

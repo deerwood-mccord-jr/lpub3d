@@ -29,7 +29,6 @@ greaterThan(QT_MAJOR_VERSION, 5) {
 CONFIG(debug, debug|release) { LPUB3D = $${TARGET}d } else { LPUB3D = $${TARGET} }
 
 include(../gitversion.pri)
-include(../common.pri)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -44,6 +43,7 @@ GAMEPAD {
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 win32 {
+
     QMAKE_TARGET_COMPANY = "$${TARGET} Software"
     QMAKE_TARGET_DESCRIPTION = "$${TARGET} - An LDraw Building Instruction Editor."
     QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2015 - 2025 Trevor SANDY"
@@ -53,18 +53,33 @@ win32 {
     RC_CODEPAGE = 1252
 
     QMAKE_EXT_OBJ = .obj
-    DEFINES      +=  QUAZIP_STATIC
-    DEFINES      += _TC_STATIC
 
     win32-msvc* {
+
+        CONFIG  += windows
+        CONFIG  += force_debug_info
         DEFINES += _WINSOCKAPI_
         DEFINES += QT_NODLL
         DEFINES += _WIN_UTF8_PATHS
+        QMAKE_CXXFLAGS_RELEASE += /FI winsock2.h /FI winsock.h
         QMAKE_LFLAGS += -NODEFAULTLIB:LIBCMT
         QMAKE_LFLAGS_WINDOWS += /STACK:4194304 /IGNORE:4099
-
-    } else {
-        QMAKE_LFLAGS += -Wl,--stack,4194304
+        QMAKE_CFLAGS_WARN_ON -= -W3
+        QMAKE_ADDL_MSVC_FLAGS = -WX- -GS -Gd -fp:precise -Zc:forScope
+        CONFIG(debug, debug|release) {
+            QMAKE_ADDL_MSVC_DEBUG_FLAGS = -RTC1 $$QMAKE_ADDL_MSVC_FLAGS
+            QMAKE_CFLAGS_WARN_ON += -W4  -wd"4005" -wd"4456" -wd"4458" -wd"4459" -wd"4127" -wd"4701" -wd"4714" -wd"4305" -wd"4099"
+            QMAKE_CFLAGS_DEBUG   += $$QMAKE_ADDL_MSVC_DEBUG_FLAGS
+            QMAKE_CXXFLAGS_DEBUG += $$QMAKE_ADDL_MSVC_DEBUG_FLAGS
+        }
+        CONFIG(release, debug|release) {
+            QMAKE_ADDL_MSVC_RELEASE_FLAGS = $$QMAKE_ADDL_MSVC_FLAGS -GF -Gy
+            QMAKE_CFLAGS_OPTIMIZE += -Ob1 -Oi -Ot
+            QMAKE_CFLAGS_WARN_ON  += -W1 -WX- -wd"4005" -wd"4456" -wd"4458" -wd"4805" -wd"4838" -wd"4700" -wd"4098"
+            QMAKE_CFLAGS_RELEASE  += $$QMAKE_ADDL_MSVC_RELEASE_FLAGS
+            QMAKE_CXXFLAGS_RELEASE += $$QMAKE_ADDL_MSVC_RELEASE_FLAGS
+        }
+        QMAKE_CXXFLAGS_WARN_ON = $$QMAKE_CFLAGS_WARN_ON
     }
 } else:macx {
     CONFIG += sdk_no_version_check
@@ -78,8 +93,47 @@ DIST_TARGET = $${TARGET}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+HOST_VERSION   = $$(PLATFORM_VER)
+BUILD_TARGET   = $$(TARGET_VENDOR)
+BUILD_ARCH     = $$(TARGET_CPU)
+
+# platform architecture, name and version fallback
+!contains(QT_ARCH, unknown): BUILD_ARCH = $$QT_ARCH
+else: isEmpty(BUILD_ARCH):   BUILD_ARCH = $$system(uname -m)
+isEmpty(BUILD_ARCH):         BUILD_ARCH = UNKNOWN ARCH
+isEmpty(BUILD_TARGET) {
+    msys:BUILD_TARGET = MSYS2
+    win32-msvc*:BUILD_TARGET = $$system(systeminfo | findstr /B /C:\"OS Name\")
+    unix:!macx:BUILD_TARGET = $$system(. /etc/os-release 2>/dev/null; [ -n \"$PRETTY_NAME\" ] && echo \"$PRETTY_NAME\" || echo `uname`)
+    macx:BUILD_TARGET = $$system(echo `sw_vers -productName`)
+}
+isEmpty(HOST_VERSION) {
+    win32-msvc*:HOST_VERSION = $$system(systeminfo | findstr /B /C:\"OS Version\")
+    unix:!macx:HOST_VERSION = $$system(. /etc/os-release 2>/dev/null; [ -n \"$VERSION_ID\" ] && echo \"$VERSION_ID\")
+    macx:HOST_VERSION = $$system(echo `sw_vers -productVersion`)
+    mingw:ide_qtcreator:HOST_VERSION = MinGW_2025
+    else:msys:HOST_VERSION = $$system(VER=$(echo $(uname -a) | grep -oP \"\b\d{4}-\d{2}-\d{2}\b\") && echo ${MSYSTEM}_${VER//-/.})
+}
+
 message("~~~ $${LPUB3D} $$upper($${TARGET}) $$upper($$QT_ARCH) BUILD: $${BUILD_TARGET}-$${HOST_VERSION}-$${BUILD_ARCH} ~~~")
 message("~~~ $${LPUB3D} BUILDING WITH QT VERSION: $$QT_VERSION ~~~")
+
+# for aarch64, QT_ARCH = arm64, for arm7l, QT_ARCH = arm
+if (contains(QT_ARCH, x86_64)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)) {
+    ARCH     = 64
+    STG_ARCH = x86_64
+    LIB_ARCH = 64
+} else {
+    ARCH     = 32
+    STG_ARCH = x86
+    LIB_ARCH =
+}
+
+# define chipset
+if (contains(QT_ARCH, arm)|contains(QT_ARCH, arm64)|contains(BUILD_ARCH, aarch64)): \
+CHIPSET  = ARM
+else: \
+CHIPSET  = AMD
 
 DEFINES += VER_ARCH=\\\"$$ARCH\\\"
 DEFINES += VER_CHIPSET=\\\"$$CHIPSET\\\"
@@ -90,52 +144,166 @@ DEFINES += OPENSUSE_1320_ARM
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+VER_LDVIEW  = ldview-4.6
+VER_LDGLITE = ldglite-1.3
+VER_POVRAY  = lpub3d_trace_cui-3.8
 DEFINES    += VER_LDVIEW=\\\"$$VER_LDVIEW\\\"
 DEFINES    += VER_LDGLITE=\\\"$$VER_LDGLITE\\\"
 DEFINES    += VER_POVRAY=\\\"$$VER_POVRAY\\\"
-!freebsd: \
-DEFINES    += EXPORT_3DS
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 INCLUDEPATH += . ../lclib/common ../lclib/qt ../ldvlib ../waitingspinner ../ldrawini jsonconfig
 DEPENDPATH  += .
 
-#~~ LDVQt paths ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-LDV_LDVQT_DIR               = $$absolute_path( ../ldvlib/LDVQt )
+win32 {
+    SYSTEM_PREFIX_ = $${PREFIX}
+} else {
+    # System libraries - on Unix, change to or add /usr/local if you want
+    macx:contains(QT_ARCH,arm64): \
+    SYSTEM_PREFIX_ = /opt/homebrew
+    else: \
+    SYSTEM_PREFIX_ = $${PREFIX}/usr/local
+}
+
+#~~~~ third party distro folder ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# - Set enviroinment variable LP3D_DIST_DIR_PATH as needed.
+# - 3rd party libraries, executables, documentation and resources.
+# - When building on macOS, it is necessary to add CONFIG+=dmg at
+#   Projects/Build Steps/Qmake/'Additional arguments' because,
+#   macOS build will also bundle all deliverables.
+
+#   Argument path - LP3D_3RD_DIST_DIR
+!isEmpty(LP3D_3RD_DIST_DIR) {
+    THIRD_PARTY_DIST_DIR_PATH = $$LP3D_3RD_DIST_DIR
+    3RD_DIR_SOURCE = LP3D_3RD_DIST_DIR
+} else {
+#   Environment variable path - LP3D_DIST_DIR_PATH
+    THIRD_PARTY_DIST_DIR_PATH = $$(LP3D_DIST_DIR_PATH)
+    !isEmpty(THIRD_PARTY_DIST_DIR_PATH): \
+    3RD_DIR_SOURCE = LP3D_DIST_DIR_PATH
+}
+#   Local path
+isEmpty(THIRD_PARTY_DIST_DIR_PATH): \
+THIRD_PARTY_DIST_DIR_PATH     = $$absolute_path( $$PWD/../builds/3rdparty )
+exists($$THIRD_PARTY_DIST_DIR_PATH): \
+3RD_DIR_SOURCE = LOCAL_3RD_DIST_DIR
+else {
+    unix:!macx: DIST_DIR      = lpub3d_linux_3rdparty
+    else:msys:  DIST_DIR      = lpub3d_msys_3rdparty
+    else:macx:  DIST_DIR      = lpub3d_macos_3rdparty
+    else:win32: DIST_DIR      = lpub3d_windows_3rdparty
+    THIRD_PARTY_DIST_DIR_PATH = $$absolute_path( $$PWD/../../$$DIST_DIR )
+    exists($$THIRD_PARTY_DIST_DIR_PATH) {
+        3RD_DIR_SOURCE_UNSPECIFIED = "INFO - THIRD_PARTY_DIST_DIR_PATH WAS NOT SPECIFIED, USING $$THIRD_PARTY_DIST_DIR_PATH"
+    } else {
+        3RD_DIR_SOURCE_UNSPECIFIED = "ERROR - THIRD_PARTY_DIST_DIR_PATH WAS NOT SPECIFIED!"
+        THIRD_PARTY_DIST_DIR_PATH="undefined"
+    }
+    3RD_DIR_SOURCE = DEFAULT_3RD_PARTY_DIR
+}
+
+# LDVQT Qt/OSMesa/WGL library identifiers
+ldviewqt {
+    CONFIG  += CUI_QT
+    POSTFIX  = -qt$${QT_MAJOR_VERSION}
+} else:ldviewwgl {
+    CONFIG  += CUI_WGL
+    POSTFIX  = -wgl
+} else:!win32-msvc* {
+    CONFIG  += OSMesa
+    POSTFIX  = -osmesa
+}
+
+!BUILD_LDV_LIBS {
+    unix|msys: \
+    LIB_LDVIEW  = libTCFoundation$${POSTFIX}.a
+    else:win32-msvc*: \
+    LIB_LDVIEW  = TCFoundation$${POSTFIX}.lib
+    LIB_LDVIEW_PATH = $${THIRD_PARTY_DIST_DIR_PATH}/$${VER_LDVIEW}/lib/$${QT_ARCH}/$${LIB_LDVIEW_PATH}
+    !exists($${LIB_LDVIEW_PATH}): \
+    CONFIG += BUILD_LDV_LIBS
+}
+
 BUILD_LDV_LIBS {
-    VER_LDVIEW_DIR_PATH     = $${LDV_LDVQT_DIR}/LDView
+    VER_LDVIEW_DIR_PATH     = $$absolute_path( $$PWD/../ldvlib/LDVQt/LDView )
     VER_LDVIEW_INCLUDE      = $${VER_LDVIEW_DIR_PATH}/include
     VER_LDVIEW_THIRD_PARTY  = $${VER_LDVIEW_DIR_PATH}/3rdParty
     LDV_LDVIEW_RESOURCE_DIR = $${VER_LDVIEW_DIR_PATH}
     LDV_EXPORT_RESOURCE_DIR = $${VER_LDVIEW_DIR_PATH}/LDExporter
 } else {
-    VER_LDVIEW_INCLUDE      = $${THIRD_PARTY_DIST_DIR_PATH}/$$VER_LDVIEW/include
-    VER_LDVIEW_THIRD_PARTY  = $${VER_LDVIEW_INCLUDE}/3rdparty
+    VER_LDVIEW_INCLUDE = $${THIRD_PARTY_DIST_DIR_PATH}/$$VER_LDVIEW/include
+    VER_LDVIEW_THIRD_PARTY = $${VER_LDVIEW_INCLUDE}/3rdparty
     LDV_LDVIEW_RESOURCE_DIR = $${THIRD_PARTY_DIST_DIR_PATH}/$$VER_LDVIEW/resources
     LDV_EXPORT_RESOURCE_DIR = $${LDV_LDVIEW_RESOURCE_DIR}
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~ LDVQt dependencies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CONFIG(debug, debug|release) {
+    VER_USE_LDVIEW_DEV = False
+    # These lines requires a git extract of ldview at the same location as the lpub3d git extract
+    # and defines the ldview git extract folder name, you can set as you like
+    mingw:ide_qtcreator: VER_LDVIEW_DEV = undefined
+    else:unix|msys:      VER_LDVIEW_DEV = ldview
+    else:win32-msvc*:    VER_LDVIEW_DEV = ldview_vs_build
+    BUILD_LDV_LIBS {
+        VER_USE_LDVIEW_DEV = False
+    } else {
+        # This line defines the path of the ldview git extract relative to this project file
+        VER_LDVIEW_DEV_REPOSITORY = $$absolute_path( $$PWD/../../$${VER_LDVIEW_DEV} )
+        message("~~~ $${LPUB3D} LINK LDVQt USING LDVIEW DEVELOPMENT REPOSITORY ~~~ ")
+        exists($$VER_LDVIEW_DEV_REPOSITORY) {
+            VER_USE_LDVIEW_DEV = True
+        } else {
+            message("~~~ $${LPUB3D} WARNING - COULD NOT LOAD LDVIEW DEV FROM: $$VER_LDVIEW_DEV_REPOSITORY ~~~ ")
+        }
+    }
+}
 
 LDV_MESSAGES_INI = ldvMessages.ini
+!freebsd: \
+DEFINES += EXPORT_3DS
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-static {                                # everything below takes effect with CONFIG ''= static
+# USE CPP 11
+contains(USE_CPP11,NO) {
+    message("NO CPP11")
+} else {
+    DEFINES += USE_CPP11
+}
+
+# Greater than or equal to Qt 5.4
+greaterThan(QT_MAJOR_VERSION, 4): \
+greaterThan(QT_MINOR_VERSION, 3) {
+    win32-msvc* {
+        QMAKE_CXXFLAGS += /std:c++17
+    } else:unix|msys {
+        greaterThan(QT_MINOR_VERSION, 11) {
+            CONFIG += c++17
+        } else {
+            QMAKE_CXXFLAGS += -std=c++17
+        }
+    }
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+static {                                     # everything below takes effect with CONFIG ''= static
     BUILD    = Static
     DEFINES += STATIC
     unix|msys: \
     DEFINES += _TC_STATIC
     DEFINES += QUAZIP_STATIC
-    QMAKE_LFLAGS += -static             # same as LIBS += -static
-    macx: \
-    TARGET   = $$join(TARGET,,,_static) # this adds an _static in the end, so you can seperate static build from non static build
-    win32-msvc*: \
-    TARGET   = $$join(TARGET,,,s)       # this adds an s in the end, so you can seperate static build from non static build
+    QMAKE_LFLAGS += -static                  # same as LIBS += -static
+    macx:        TARGET = $$join(TARGET,,,_static) # this adds an _static in the end, so you can seperate static build from non static build
+    win32-msvc*: TARGET = $$join(TARGET,,,s)       # this adds an s in the end, so you can seperate static build from non static build
 } else {
-    BUILD    = Shared
+    BUILD   = Shared
     msys: \
     CONFIG  -= static
 }
@@ -153,12 +321,14 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = QuaZIPd11
         LC_LIB = LCd233
         LDVQT_LIB = LDVQtd46
+        WPNGIMAGE_LIB = WPngImaged14
         WAITING_SPINNER_LIB = WaitingSpinnerd10
         msys {
             LDRAWINI_LIB = $$lower($$LDRAWINI_LIB)
             QUAZIP_LIB = $$lower(lib$$QUAZIP_LIB)
             LC_LIB = $$lower($$LC_LIB)
             LDVQT_LIB = $$lower($$LDVQT_LIB)
+            WPNGIMAGE_LIB = $$lower($$WPNGIMAGE_LIB)
             WAITING_SPINNER_LIB = $$lower($$WAITING_SPINNER_LIB)
         }
     }
@@ -168,6 +338,7 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = libQuaZIP_debug
         LC_LIB = LC_debug
         LDVQT_LIB = LDVQt_debug
+        WPNGIMAGE_LIB = WPngImage_debug
         WAITING_SPINNER_LIB = WaitingSpinner_debug
     }
 
@@ -176,6 +347,7 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = libquazipd
         LC_LIB = lcd
         LDVQT_LIB = ldvqtd
+        WPNGIMAGE_LIB = wpngimaged
         WAITING_SPINNER_LIB = waitingspinnerd
 
         # For Linux builds, simplify debug ops by using runtime content in build folders
@@ -203,12 +375,14 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = QuaZIP11
         LC_LIB = LC233
         LDVQT_LIB = LDVQt46
+        WPNGIMAGE_LIB = WPngImage14
         WAITING_SPINNER_LIB = WaitingSpinner10
         msys {
             LDRAWINI_LIB = $$lower($$LDRAWINI_LIB)
             QUAZIP_LIB = $$lower(lib$$QUAZIP_LIB)
             LC_LIB = $$lower($$LC_LIB)
             LDVQT_LIB = $$lower($$LDVQT_LIB)
+            WPNGIMAGE_LIB = $$lower($$WPNGIMAGE_LIB)
             WAITING_SPINNER_LIB = $$lower($$WAITING_SPINNER_LIB)
         }
     }
@@ -218,6 +392,7 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = libQuaZIP
         LC_LIB = LC
         LDVQT_LIB = LDVQt
+        WPNGIMAGE_LIB = WPngImage
         WAITING_SPINNER_LIB = WaitingSpinner
     }
 
@@ -226,6 +401,7 @@ CONFIG(debug, debug|release) {
         QUAZIP_LIB = libquazip
         LC_LIB = lc
         LDVQT_LIB = ldvqt
+        WPNGIMAGE_LIB = wpngimage
         WAITING_SPINNER_LIB = waitingspinner
     }
 
@@ -360,6 +536,21 @@ INCLUDEPATH += $${SYSTEM_PREFIX_}/include
 # 18/11/2024 - Always use local QuaZip for added minizip unzOpen calls to accommodate LDView
 INCLUDEPATH += ../quazip
 
+#~~ extensions~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+win32-msvc* {
+    EXT_S = lib
+    EXT_D = dll
+} else {
+    EXT_S = a
+    msys: \
+    EXT_D = dll
+    else:macx: \
+    EXT_D = dylib
+    else: \
+    EXT_D = so
+}
+
 #~~ includes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 include(../qslog/QsLog.pri)
@@ -378,6 +569,9 @@ LIBS += -L$$absolute_path($$OUT_PWD/../waitingspinner/$$DESTDIR) -l$$WAITING_SPI
 LIBS += -L$$absolute_path($$OUT_PWD/../lclib/$$DESTDIR) -l$$LC_LIB
 
 LIBS += -L$$absolute_path($$OUT_PWD/../ldvlib/LDVQt/$$DESTDIR) -l$$LDVQT_LIB
+
+# WPngImage must follow LDVQT or else there will be compile errors
+LIBS += -L$$absolute_path($$OUT_PWD/../ldvlib/WPngImage/$$DESTDIR) -l$$WPNGIMAGE_LIB
 
 # Load LDView libraries for LDVQt
 LOAD_LDV_LIBS = True
@@ -403,6 +597,8 @@ LIBS += -lwininet -ladvapi32 -lshell32 -lshlwapi -luser32 \
         -lgdi32 $$QMAKE_LIBS_NETWORK $$OPENGL_LIBS
 else:!macx: \
 LIBS += -lGL -lGLU
+!win32-msvc*: \
+LIBS += -lz
 
 #~~ update check ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -607,7 +803,6 @@ SOURCES += \
     lpub_object.cpp \
     lpub_preferences.cpp \
     messageboxresizable.cpp \
-    main.cpp \
     meta.cpp \
     metagui.cpp \
     metaitem.cpp \
@@ -694,5 +889,48 @@ RESOURCES += \
     ../ldvlib/LDVQt/resources.qrc \
     resources/lsynth/lsynth.qrc \
     lpub3d.qrc
+
+#~~ suppress warnings ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+unix|msys {
+QMAKE_CFLAGS_WARN_ON += \
+    -Wall -W \
+    -Wno-deprecated-declarations \
+    -Wno-unknown-pragmas \
+    -Wno-overloaded-virtual
+QMAKE_CXXFLAGS_WARN_ON  = $${QMAKE_CFLAGS_WARN_ON}
+QMAKE_CXXFLAGS_WARN_ON += \
+    -Wno-deprecated-copy
+} # unix|msys
+if (unix|msys):!macx {
+QMAKE_CFLAGS_WARN_ON += \
+    -Wno-implicit-fallthrough \
+    -Wno-unused-parameter \
+    -Wno-sign-compare \
+    -Wno-strict-aliasing
+msys {
+QMAKE_CFLAGS_WARN_ON += \
+    -Wno-attributes
+QMAKE_CXXFLAGS_WARN_ON += $${QMAKE_CFLAGS_WARN_ON}
+QMAKE_CFLAGS_WARN_ON += \
+    -Wno-misleading-indentation
+QMAKE_CXXFLAGS_WARN_ON += \
+    -Wno-template-id-cdtor \
+    -Wno-cast-function-type \
+    -Wno-class-memaccess \
+    -Wno-type-limits \
+    -Wno-maybe-uninitialized \
+    -Wno-unused-result \
+    -Wno-cpp
+} else: \
+QMAKE_CXXFLAGS_WARN_ON += $${QMAKE_CFLAGS_WARN_ON}
+} # unix|msys:!macx
+macx {
+QMAKE_CFLAGS_WARN_ON += \
+    -Wno-sometimes-uninitialized \
+    -Wno-self-assign \
+    -Wno-unused-result
+QMAKE_CXXFLAGS_WARN_ON += $${QMAKE_CFLAGS_WARN_ON}
+}
 
 #message($$CONFIG)

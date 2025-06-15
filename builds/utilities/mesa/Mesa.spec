@@ -1,7 +1,7 @@
 #
 # spec file for package Mesa
 #
-# Copyright (c) 2022 SUSE LLC
+# Copyright (C) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -12,164 +12,109 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-# Please submit bugfixes or comments via https://bugs.opensuse.org/
+# Please submit bugfixes or comments via http://bugs.opensuse.org/
 #
 
 
-# Following define and the Name attribute are the only difference between
-# Mesa.spec and Mesa-drivers.spec. Mesa-drivers.spec is generated from
-# Mesa.spec using the pre_checkin.sh script.
-#
-# Mesa.spec builds everything that is hardware independent and does not
-# require llvm. Most importantly it builds all OpenGL (ES) libraries.
-#
-# Mesa-drivers.spec builds hardware specific drivers and parts that require
-# llvm.
-#
-# The purpose of this split is to be able to build most Mesa-* packages fast
-# without waiting for llvm. This helps speed up whole distribution build in
-# OBS. (https://bugzilla.suse.com/show_bug.cgi?id=1071297)
-# Note that if you actually need to render something, you need the packages
-# from Mesa-driver.
-
-%ifarch armv6l armv6hl
-%define _lto_cflags %{nil}
+%define libglvnd 0
+%if 0%{?suse_version} >= 1330
+%define libglvnd 1
 %endif
-
-%define drivers 0
-
 %define glamor 1
 %define _name_archive mesa
-%define _version 21.3.7
+%define _version 17.2.6
 %define with_opencl 0
 %define with_vulkan 0
-%define with_llvm 0
-
-%ifarch %{ix86} x86_64 %{arm} aarch64 ppc64 ppc64le riscv64
-  %define gallium_loader 1
+%ifarch %ix86 x86_64 %arm aarch64 ppc ppc64 ppc64le s390x
+%define gallium_loader 1
 %else
-  %define gallium_loader 0
+%define gallium_loader 0
 %endif
-
+%ifarch %ix86 x86_64 aarch64 %arm ppc64 ppc64le
+%define xvmc_support 1
+%define vdpau_nouveau 1
+%define vdpau_radeon 1
+%else
 %define xvmc_support 0
 %define vdpau_nouveau 0
 %define vdpau_radeon 0
-
-%ifarch %{ix86} x86_64 aarch64 %{arm} ppc64 ppc64le riscv64
-  %define xvmc_support 1
-  %define vdpau_nouveau 1
-  %define vdpau_radeon 1
 %endif
-
-%ifarch %{ix86} x86_64 %{arm} aarch64
-  %define with_nine 1
+%ifarch %ix86 x86_64
+%define with_nine 1
 %endif
-
-%if 0%{gallium_loader}
-  %define with_opencl 1
-  %ifarch %{ix86} x86_64
-    %define with_vulkan 1
-    %define vulkan_drivers swrast,amd,intel
-  %endif
-  %ifarch %{arm} aarch64
-    %define with_vulkan 1
-    %define vulkan_drivers swrast,amd,broadcom,freedreno
-  %endif
+%if 0%{gallium_loader} && 0%{?suse_version} >= 1330
+# llvm >= 3.9 not provided for <= 1330
+%ifnarch ppc
+%define with_opencl 1
 %endif
-
-%ifarch aarch64 %{arm} ppc64 ppc64le riscv64 s390x %{ix86} x86_64
-  %define with_llvm 1
+%ifarch %ix86 x86_64
+%define with_vulkan 1
 %endif
-
-%if 0%{with_opencl}
-%define have_gallium 1
-%else
-%define have_gallium 0
-%endif
-
-%if %{drivers}
-  %define glamor 0
-%else
-  # No llvm dependencies
-  %define with_llvm 0
-
-  # OpenCL requires clang (LLVM)
-  %define with_opencl 0
-
-  # nine requires at least one non-swrast gallium driver
-  %define with_nine 0
-
-  # Not built because radeon driver is not built.
-  %define vdpau_radeon 0
-
-  # Not built because nouveau driver is not built.
-  %define vdpau_nouveau 0
-
-  # Not built. (Why?)
-  %define xvmc_support 0
-
-  # Vulkan includes radv driver which requires llvm
-  %define with_vulkan 0
 %endif
 
 Name:           Mesa
-Version:        21.3.7
+Version:        17.2.6
 Release:        0
-Summary:        System for rendering 3-D graphics
+Summary:        System for rendering interactive 3-D graphics
 License:        MIT
 Group:          System/Libraries
-URL:            http://www.mesa3d.org
-#Git-Clone:     git://anongit.freedesktop.org/mesa/mesa
-Source:         https://mesa.freedesktop.org/archive/%{_name_archive}-%{_version}.tar.xz
-Source1:        https://mesa.freedesktop.org/archive/%{_name_archive}-%{_version}.tar.xz.sig
+Url:            http://www.mesa3d.org
+# For now directory structure of Mesa's ftp changed
+# Source:         ftp://ftp.freedesktop.org/pub/mesa/%%{version}/%%{_name_archive}-%%{_version}.tar.xz
+Source:         ftp://ftp.freedesktop.org/pub/mesa/%{_name_archive}-%{_version}.tar.xz
+# Source1:        ftp://ftp.freedesktop.org/pub/mesa/%%{version}/%%{_name_archive}-%%{_version}.tar.xz.sig
+Source1:        ftp://ftp.freedesktop.org/pub/mesa/%{_name_archive}-%{_version}.tar.xz.sig
 Source2:        baselibs.conf
 Source3:        README.updates
 Source4:        manual-pages.tar.bz2
 Source6:        %{name}-rpmlintrc
 Source7:        Mesa.keyring
-Patch2:         n_add-Mesa-headers-again.patch
+# to be upstreamed
+Patch11:        u_Fix-crash-in-swrast-when-setting-a-texture-for-a-pix.patch
+Patch12:        u_add_llvm_codegen_dependencies.patch
+# Patch from Fedora, fix 16bpp in llvmpipe
+Patch13:        u_mesa-8.0.1-fix-16bpp.patch
+# Patch from Fedora, use shmget when available, under llvmpipe
+Patch15:        u_mesa-8.0-llvmpipe-shmget.patch
 # never to be upstreamed
-Patch54:        n_drirc-disable-rgb10-for-chromium-on-amd.patch
-Patch58:        u_dep_xcb.patch
-Patch100:       U_fix-mpeg1_2-decode-mesa-20.2.patch
-Patch200:       u_fix-build-on-ppc64le.patch
-Patch300:       n_buildfix-21.3.0.patch
-Patch400:       n_no-sse2-on-ix86-except-for-intel-drivers.patch
+Patch18:        n_VDPAU-XVMC-libs-Replace-hardlinks-with-copies.patch
+# never to be upstreamed
+Patch21:        n_Define-GLAPIVAR-separate-from-GLAPI.patch
+# currently needed for libglvnd support
+Patch31:        archlinux_0001-Fix-linkage-against-shared-glapi.patch
+Patch32:        archlinux_glvnd-fix-gl-dot-pc.patch
+Patch42:        u_r600-Add-support-for-B5G5R5A1.patch
+Patch43:        U_configure.ac-rework-llvm-libs-handling-for-3.9.patch
+
+BuildRequires:  autoconf >= 2.60
+BuildRequires:  automake
 BuildRequires:  bison
 BuildRequires:  fdupes
 BuildRequires:  flex
 BuildRequires:  gcc-c++
-BuildRequires:  glslang-devel
 BuildRequires:  imake
 BuildRequires:  libtool
-BuildRequires:  memory-constraints
-BuildRequires:  meson
 BuildRequires:  pkgconfig
-BuildRequires:  python3-base
-%if 0%{?suse_version} > 1320
-BuildRequires:  python3-mako
-%else
-BuildRequires:  python3-Mako
-%endif
-BuildRequires:  python3-xml
+BuildRequires:  python-base
+BuildRequires:  python-mako
+BuildRequires:  python-xml
 BuildRequires:  pkgconfig(dri2proto)
 BuildRequires:  pkgconfig(dri3proto)
 BuildRequires:  pkgconfig(expat)
 BuildRequires:  pkgconfig(glproto)
 BuildRequires:  pkgconfig(libdrm) >= 2.4.75
-BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.95
+BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.79
 BuildRequires:  pkgconfig(libdrm_nouveau) >= 2.4.66
 BuildRequires:  pkgconfig(libdrm_radeon) >= 2.4.71
+%if 0%{?libglvnd}
 BuildRequires:  pkgconfig(libglvnd) >= 0.1.0
-%ifarch aarch64 %{ix86} x86_64 ppc64le s390x
-BuildRequires:  pkgconfig(valgrind)
 %endif
 BuildRequires:  pkgconfig(libkms) >= 1.0.0
+BuildRequires:  pkgconfig(libudev) > 151
 BuildRequires:  pkgconfig(libva)
+BuildRequires:  pkgconfig(openssl)
 BuildRequires:  pkgconfig(presentproto)
-%if %{drivers}
 BuildRequires:  pkgconfig(vdpau) >= 1.1
-%endif
 BuildRequires:  pkgconfig(x11)
 BuildRequires:  pkgconfig(x11-xcb)
 BuildRequires:  pkgconfig(xcb-dri2)
@@ -179,7 +124,6 @@ BuildRequires:  pkgconfig(xcb-present)
 BuildRequires:  pkgconfig(xdamage)
 BuildRequires:  pkgconfig(xext)
 BuildRequires:  pkgconfig(xfixes)
-BuildRequires:  pkgconfig(xrandr)
 BuildRequires:  pkgconfig(xshmfence)
 BuildRequires:  pkgconfig(xvmc)
 BuildRequires:  pkgconfig(xxf86vm)
@@ -194,16 +138,12 @@ Provides:       Mesa-nouveau3d = %{version}
 Provides:       xorg-x11-Mesa = %{version}
 Obsoletes:      Mesa-nouveau3d < %{version}
 Obsoletes:      xorg-x11-Mesa < %{version}
-Provides:       s2tc = %{version}
-Obsoletes:      s2tc < %{version}
-Provides:       libtxc_dxtn = %{version}
-Obsoletes:      libtxc_dxtn < %{version}
-%ifarch %{arm} aarch64
-BuildRequires:  pkgconfig(libdrm_etnaviv) >= 2.4.89
+BuildRoot:      %{_tmppath}/%{name}-%{version}-build
+%ifarch %arm
 BuildRequires:  pkgconfig(libdrm_freedreno) >= 2.4.74
 BuildRequires:  pkgconfig(libelf)
 %endif
-%ifarch x86_64 %{ix86}
+%ifarch x86_64 %ix86
 BuildRequires:  libelf-devel
 BuildRequires:  pkgconfig(libdrm_intel) >= 2.4.75
 %else
@@ -212,44 +152,26 @@ BuildRequires:  libelf-devel
 %endif
 %endif
 # Requirements for wayland bumped up from 17.0
+%if 0%{?suse_version} > 1320 || (0%{?sle_version} >= 120300 && 0%{?is_opensuse})
 BuildRequires:  pkgconfig(wayland-client) >= 1.11
 BuildRequires:  pkgconfig(wayland-protocols) >= 1.8
 BuildRequires:  pkgconfig(wayland-server) >= 1.11
-%if 0%{with_llvm}
-%if 0%{?suse_version} >= 1550
+%endif
+%ifarch aarch64 %arm ppc64 ppc64le s390x %ix86 x86_64
 BuildRequires:  llvm-devel
-%else
-%if 0%{?sle_version} >= 150300
-BuildRequires:  llvm11-devel
-%else
-BuildRequires:  llvm9-devel
-%endif
-%endif
+BuildRequires:  ncurses-devel
 %endif
 
 %if 0%{with_opencl}
-%if 0%{?suse_version} >= 1550
 BuildRequires:  clang-devel
-%else
-%if 0%{?sle_version} >= 150300
-BuildRequires:  clang11-devel
-%else
-BuildRequires:  clang9-devel
-%endif
-%endif
+BuildRequires:  clang-devel-static
 BuildRequires:  libclc
 %endif
 
-Requires:       Mesa-libEGL1 = %{version}
-Requires:       Mesa-libGL1 = %{version}
+%if 0%{?libglvnd}
+Requires:       Mesa-libEGL1  = %{version}
+Requires:       Mesa-libGL1  = %{version}
 Requires:       libglvnd >= 0.1.0
-
-# This dependency on Mesa-dri and Mesa-gallium is here to make sure users that
-# do not install recommends on their system still get working Mesa. It is
-# ignored in obs when Mesa is installed as build dependency.
-Requires:       Mesa-dri = %{version}
-%if 0%{have_gallium}
-Requires:       Mesa-gallium = %{version}
 %endif
 
 %description
@@ -281,15 +203,13 @@ Requires:       libOSMesa-devel = %{version}
 Requires:       libgbm-devel
 Provides:       Mesa-devel-static = %{version}
 Provides:       xorg-x11-Mesa-devel = %{version}
-Requires:       libglvnd-devel >= 1.2.0
 Obsoletes:      Mesa-devel-static < %{version}
 Obsoletes:      xorg-x11-Mesa-devel < %{version}
 Provides:       Mesa-libIndirectGL-devel = %{version}
 Obsoletes:      Mesa-libIndirectGL-devel < %{version}
-Provides:       s2tc-devel = %{version}
-Obsoletes:      s2tc-devel < %{version}
-Provides:       libtxc_dxtn-devel = %{version}
-Obsoletes:      libtxc_dxtn-devel < %{version}
+%if 0%{?suse_version} > 1320 || (0%{?sle_version} >= 120300 && 0%{?is_opensuse})
+Requires:       libwayland-egl-devel
+%endif
 
 %description devel
 Mesa is a 3-D graphics library with an API which is very similar to
@@ -306,13 +226,15 @@ just Mesa or The Mesa 3-D graphics library.
 
 * OpenGL is a trademark of Silicon Graphics Incorporated.
 
-%package libEGL1
+%package -n Mesa-libEGL1
 # Kudos to Debian for the descriptions
-Summary:        EGL API implementation
+Summary:        Free implementation of the EGL API
 Group:          System/Libraries
+%if 0%{?libglvnd}
 Requires:       libglvnd >= 0.1.0
+%endif
 
-%description libEGL1
+%description -n Mesa-libEGL1
 This package contains the EGL native platform graphics interface
 library. EGL provides a platform-agnostic mechanism for creating
 rendering surfaces for use with other graphics libraries, such as
@@ -323,16 +245,16 @@ GLX or DRI2 drivers to provide OpenGL via EGL. The Mesa main package
 provides drivers to provide hardware-accelerated OpenGL|ES and OpenVG
 support.
 
-%package libEGL-devel
+%package -n Mesa-libEGL-devel
 Summary:        Development files for the EGL API
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-KHR-devel = %{version}
 Requires:       Mesa-libEGL1 = %{version}
+%if 0%{?libglvnd}
 Requires:       libglvnd-devel >= 0.1.0
-Requires:       pkgconfig(x11)
+%endif
 # Other requires taken care of by pkgconfig already
 
-%description libEGL-devel
+%description -n Mesa-libEGL-devel
 This package contains the development environment required for
 compiling programs against EGL native platform graphics interface
 library. EGL provides a platform-agnostic mechanism for creating
@@ -342,21 +264,15 @@ OpenGL|ES and OpenVG.
 This package provides the development environment for compiling
 programs against the EGL library.
 
-%package KHR-devel
-Summary:        Mesa Khronos development headers
-Group:          Development/Libraries/C and C++
-Provides:       Mesa-libGL-devel:/usr/include/KHR/khrplatform.h
-
-%description KHR-devel
-Mesa Khronos development headers.
-
-%package libGL1
+%package -n Mesa-libGL1
 Summary:        The GL/GLX runtime of the Mesa 3D graphics library
 Group:          System/Libraries
 Requires:       Mesa = %{version}
+%if 0%{?libglvnd}
 Requires:       libglvnd >= 0.1.0
+%endif
 
-%description libGL1
+%description -n Mesa-libGL1
 Mesa is a software library for 3D computer graphics that provides a
 generic OpenGL implementation for rendering three-dimensional
 graphics.
@@ -366,14 +282,15 @@ interface connecting OpenGL and the X Window System: it enables
 programs wishing to use OpenGL to do so within a window provided by
 the X Window System.
 
-%package libGL-devel
+%package -n Mesa-libGL-devel
 Summary:        GL/GLX development files of the OpenGL API
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-KHR-devel = %{version}
 Requires:       Mesa-libGL1 = %{version}
+%if 0%{?libglvnd}
 Requires:       libglvnd-devel >= 0.1.0
+%endif
 
-%description libGL-devel
+%description -n Mesa-libGL-devel
 Mesa is a software library for 3D computer graphics that provides a
 generic OpenGL implementation for rendering three-dimensional
 graphics.
@@ -381,15 +298,32 @@ graphics.
 This package includes headers and static libraries for compiling
 programs with Mesa.
 
-%package libGLESv1_CM-devel
+%package -n Mesa-libGLESv1_CM1
+Summary:        Free implementation of the OpenGL|ES 1.x Common Profile API
+Group:          System/Libraries
+%if 0%{?libglvnd}
+Requires:       libglvnd >= 0.1.0
+%endif
+
+%description -n Mesa-libGLESv1_CM1
+OpenGL|ES is a cross-platform API for full-function 2D and 3D
+graphics on embedded systems - including consoles, phones, appliances
+and vehicles. It contains a subset of OpenGL plus a number of
+extensions for the special needs of embedded systems.
+
+OpenGL|ES 1.x provides an API for fixed-function hardware.
+
+%package -n Mesa-libGLESv1_CM-devel
 Summary:        Development files for the OpenGL ES 1.x API
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-KHR-devel = %{version}
+Requires:       Mesa-libGLESv1_CM1 = %{version}
+%if 0%{?libglvnd}
 Requires:       libglvnd-devel >= 0.1.0
+%endif
 Requires:       pkgconfig(egl)
 
-%description libGLESv1_CM-devel
-OpenGL|ES is an API for full-function 2D and 3D
+%description -n Mesa-libGLESv1_CM-devel
+OpenGL|ES is a cross-platform API for full-function 2D and 3D
 graphics on embedded systems - including consoles, phones, appliances
 and vehicles. It contains a subset of OpenGL plus a number of
 extensions for the special needs of embedded systems.
@@ -399,15 +333,36 @@ OpenGL|ES 1.x provides an API for fixed-function hardware.
 This package provides a development environment for building programs
 using the OpenGL|ES 1.x APIs.
 
-%package libGLESv2-devel
+%package -n Mesa-libGLESv2-2
+Summary:        Free implementation of the OpenGL|ES 2.x API
+Group:          System/Libraries
+%if 0%{?libglvnd}
+Requires:       libglvnd >= 0.1.0
+%endif
+
+%description -n Mesa-libGLESv2-2
+OpenGL|ES is a cross-platform API for full-function 2D and 3D
+graphics on embedded systems - including consoles, phones, appliances
+and vehicles. It contains a subset of OpenGL plus a number of
+extensions for the special needs of embedded systems.
+
+OpenGL|ES 2.x provides an API for programmable hardware including
+vertex and fragment shaders.
+
+The libGLESv2.so.2 library provides symbols for all OpenGL ES 2 and
+ES 3 entry points.
+
+%package -n Mesa-libGLESv2-devel
 Summary:        Development files for the OpenGL ES 2.x API
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-KHR-devel = %{version}
+Requires:       Mesa-libGLESv2-2 = %{version}
+%if 0%{?libglvnd}
 Requires:       libglvnd-devel >= 0.1.0
+%endif
 Requires:       pkgconfig(egl)
 
-%description libGLESv2-devel
-OpenGL|ES is an API for full-function 2D and 3D
+%description -n Mesa-libGLESv2-devel
+OpenGL|ES is a cross-platform API for full-function 2D and 3D
 graphics on embedded systems - including consoles, phones, appliances
 and vehicles. It contains a subset of OpenGL plus a number of
 extensions for the special needs of embedded systems.
@@ -418,14 +373,16 @@ vertex and fragment shaders.
 This package provides a development environment for building
 applications using the OpenGL|ES 2.x APIs.
 
-%package libGLESv3-devel
+%package -n Mesa-libGLESv3-devel
 Summary:        Development files for the OpenGL ES 3.x API
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-KHR-devel = %{version}
+%if 0%{?libglvnd} == 0
+Requires:       Mesa-libGLESv2-2 = %{version}
+%endif
 Requires:       pkgconfig(egl)
 
-%description libGLESv3-devel
-OpenGL|ES is an API for full-function 2D and 3D
+%description -n Mesa-libGLESv3-devel
+OpenGL|ES is a cross-platform API for full-function 2D and 3D
 graphics on embedded systems - including consoles, phones, appliances
 and vehicles. It contains a subset of OpenGL plus a number of
 extensions for the special needs of embedded systems.
@@ -437,8 +394,8 @@ applications using the OpenGL|ES 3.x APIs.
 Summary:        Mesa Off-screen rendering extension
 # Wrongly named package shipped .so.8
 Group:          System/Libraries
-Obsoletes:      libOSMesa9 < %{version}
-Provides:       libOSMesa9 = %{version}
+Obsoletes:      libOSMesa9 < %{version}-%{release}
+Provides:       libOSMesa9 = %{version}-%{release}
 
 %description -n libOSMesa8
 OSmesa is a Mesa extension that allows programs to render to an
@@ -455,40 +412,31 @@ Development files for the OSmesa Mesa extension that allows programs to render t
 off-screen buffer using the OpenGL API without having to create a
 rendering context on an X Server. It uses a pure software renderer.
 
-%package libglapi0
+%package -n Mesa-libglapi0
 Summary:        Free implementation of the GL API
 Group:          System/Libraries
 
-%description libglapi0
+%description -n Mesa-libglapi0
 The Mesa GL API module is responsible for dispatching all the gl*
 functions. It is intended to be mainly used by the Mesa-libGLES*
 packages.
 
-%package libglapi-devel
-Summary:        Development files for the Mesa GL API implementation
+%package -n Mesa-libglapi-devel
+Summary:        Development files for the free implementation of the GL API
 Group:          Development/Libraries/C and C++
 Requires:       Mesa-libglapi0 = %{version}
 
-%description libglapi-devel
+%description -n Mesa-libglapi-devel
 Development files for the Mesa GL API module which is responsible for
 dispatching all the gl* functions. It is intended to be mainly used by
 the Mesa-libGLES* packages.
 
-%package -n Mesa-dri
-Summary:        DRI plug-ins for 3D acceleration
-Group:          System/Libraries
-Requires:       Mesa = %{version}
-Supplements:    Mesa
-
-%description -n Mesa-dri
-This package contains Mesa DRI drivers for 3D acceleration.
-
-%package dri-devel
+%package -n Mesa-dri-devel
 Summary:        Development files for the DRI API
 Group:          Development/Libraries/C and C++
 Requires:       Mesa = %{version}
 
-%description dri-devel
+%description -n Mesa-dri-devel
 This package contains the development environment required for
 compiling programs and libraries using the DRI API.
 
@@ -496,30 +444,12 @@ compiling programs and libraries using the DRI API.
 Summary:        Mesa DRI plug-in for 3D acceleration via Nouveau
 Group:          System/Libraries
 Requires:       Mesa = %{version}
+Supplements:    xf86-video-nouveau
 
 %description -n Mesa-dri-nouveau
 This package contains nouveau_dri.so, which is necessary for
 Nouveau's 3D acceleration to work. It is packaged separately
 since it is still experimental.
-
-%package -n Mesa-dri-vc4
-Summary:        Mesa DRI plug-in for 3D acceleration on Raspberry Pi
-Group:          System/Libraries
-Requires:       Mesa = %{version}
-
-%description -n Mesa-dri-vc4
-This package contains vc4_dri.so, which is necessary for 3D
-acceleration on the Raspberry Pi to work. It is packaged separately
-since it is still experimental.
-
-%package -n Mesa-gallium
-Summary:        Mesa Gallium GPU drivers
-Group:          System/Libraries
-Requires:       Mesa = %{version}
-Supplements:    Mesa
-
-%description -n Mesa-gallium
-This package contains Mesa Gallium drivers for 3D acceleration.
 
 %package -n libgbm1
 Summary:        Generic buffer management API
@@ -549,25 +479,43 @@ openwfd.
 This package provides the development environment for compiling
 programs against the GBM library.
 
-%package -n Mesa-libd3d
+%package -n libwayland-egl1
+Summary:        Additional egl functions for wayland
+Group:          System/Libraries
+
+%description -n libwayland-egl1
+This package provides additional functions for egl-using programs
+that run within the wayland framework. This allows for applications
+that need not run full-screen and cooperate with a compositor.
+
+%package -n libwayland-egl-devel
+Summary:        Development files for libwayland-egl1
+Group:          Development/Libraries/C and C++
+Requires:       libwayland-egl1 = %{version}
+
+%description -n libwayland-egl-devel
+This package is required to link wayland client applications to the EGL
+implementation of Mesa.
+
+%package libd3d
 Summary:        Mesa Direct3D9 state tracker
 # Manually provide d3d library (bnc#918294)
 Group:          System/Libraries
-%ifarch x86_64 s390x ppc64 ppc64le aarch64 riscv64
+%ifarch x86_64 s390x ppc64le aarch64
 Provides:       d3dadapter9.so.1()(64bit)
 %else
 Provides:       d3dadapter9.so.1
 %endif
 
-%description -n Mesa-libd3d
+%description libd3d
 Mesa Direct3D9 state tracker
 
-%package -n Mesa-libd3d-devel
+%package libd3d-devel
 Summary:        Mesa Direct3D9 state tracker development package
 Group:          Development/Libraries/C and C++
-Requires:       Mesa-libd3d = %{version}
+Requires:       %{name}-libd3d = %{version}
 
-%description -n Mesa-libd3d-devel
+%description libd3d-devel
 Mesa Direct3D9 state tracker development package
 
 %package -n libXvMC_nouveau
@@ -591,8 +539,7 @@ videos and artefacts all over.
 %package -n libvdpau_nouveau
 Summary:        XVMC state tracker for Nouveau
 Group:          System/Libraries
-Supplements:    modalias(pci:v000010DEd*sv*sd*bc03sc*i*)
-Supplements:    modalias(pci:v000012D2d*sv*sd*bc03sc*i*)
+Supplements:    xf86-video-nouveau
 
 %description -n libvdpau_nouveau
 This package contains the VDPAU state tracker for Nouveau.
@@ -621,31 +568,26 @@ Supplements:    xf86-video-ati
 %description -n libvdpau_radeonsi
 This package contains the VDPAU state tracker for radeonsi.
 
-%package -n Mesa-libOpenCL
+%package libOpenCL
 Summary:        Mesa OpenCL implementation
 Group:          System/Libraries
-%if 0%{?suse_version} >= 1550 || 0%{?sle_version} >= 150300
-Requires:       libclc(llvm%{_llvm_sonum})
-%else
 Requires:       libclc
-%endif
 
-%description -n Mesa-libOpenCL
+%description libOpenCL
 This package contains the Mesa OpenCL implementation or GalliumCompute.
 
-%package -n Mesa-libva
+%package libva
 Summary:        Mesa VA-API implementation
 Group:          System/Libraries
 Supplements:    Mesa
 
-%description -n Mesa-libva
+%description libva
 This package contains the Mesa VA-API implementation provided through gallium.
 
 %package -n libvulkan_intel
 Summary:        Mesa vulkan driver for Intel GPU
 Group:          System/Libraries
-Supplements:    modalias(pci:v00008086d*sv*sd*bc03sc*i*)
-Requires:       Mesa-vulkan-device-select
+Supplements:    xf86-video-intel
 
 %description -n libvulkan_intel
 This package contains the Vulkan parts for Mesa.
@@ -653,56 +595,21 @@ This package contains the Vulkan parts for Mesa.
 %package -n libvulkan_radeon
 Summary:        Mesa vulkan driver for AMD GPU
 Group:          System/Libraries
-Supplements:    modalias(pci:v00001002d*sv*sd*bc03sc*i*)
-Requires:       Mesa-vulkan-device-select
+Supplements:    xf86-video-ati
+Supplements:    xf86-video-amdgpu
 
 %description -n libvulkan_radeon
 This package contains the Vulkan parts for Mesa.
 
-%package -n libvulkan_lvp
-Summary:        Mesa vulkan driver for LVP
-Group:          System/Libraries
-Requires:       Mesa-vulkan-device-select
-
-%description -n libvulkan_lvp
-This package contains the Vulkan parts for Mesa.
-
-%ifarch %{arm} aarch64
-%package -n libvulkan_broadcom
-Summary:        Mesa vulkan driver for Broadcom
-Group:          System/Libraries
-
-%description -n libvulkan_broadcom
-This package contains the Vulkan parts for Mesa.
-
-%package -n libvulkan_freedreno
-Summary:        Mesa vulkan driver for Freedreno
-Group:          System/Libraries
-
-%description -n libvulkan_freedreno
-This package contains the Vulkan parts for Mesa.
-%endif
-
-%package -n Mesa-libVulkan-devel
-Summary:        Mesa's Vulkan development files
+%package  libVulkan-devel
+Summary:        Mesas Vulkan development files
 Group:          Development/Libraries/C and C++
+Requires:       libvulkan_intel = %{version}
+Requires:       libvulkan_radeon = %{version}
+Conflicts:      vulkan-devel
 
-%description -n Mesa-libVulkan-devel
-This package contains the development files for Mesa's Vulkan implementation.
-
-%package -n Mesa-vulkan-device-select
-Summary:        Vulkan layer to select Vulkan devices provided by Mesa
-Group:          System/Libraries
-
-%description -n Mesa-vulkan-device-select
-This package contains the VK_MESA_device_select Vulkan layer
-
-%package -n Mesa-vulkan-overlay
-Summary:        Mesa Vulkan Overlay layer
-Group:          System/Libraries
-
-%description -n Mesa-vulkan-overlay
-This package contains the VK_MESA_Overlay Vulkan layer
+%description libVulkan-devel
+This package contains the development files for Mesas Vulkan implementation.
 
 %package -n libxatracker2
 Version:        1.0.0
@@ -736,218 +643,146 @@ programs against the XA state tracker.
 %setup -q -n %{_name_archive}-%{_version} -b4
 # remove some docs
 rm -rf docs/README.{VMS,WIN32,OS2}
+### disabled, but not dropped yet; these still need investigation in
+### order to figure out whether the issue is still reproducable and
+### hence a fix is required
+#%patch11 -p1
+#%patch15 -p1
+#%patch13 -p1
+%patch12 -p1
+%patch18 -p1
+%patch21 -p1
 
-%patch2 -p1
-# no longer needed since gstreamer-plugins-vaapi 1.18.4
-%if 0%{?suse_version} < 1550
-%patch54 -p1
+%if 0%{?libglvnd}
+%patch31 -p1
+%patch32 -p1
 %endif
-%patch58 -p1
-%patch100 -p1
-%patch200 -p1
-%patch300 -p1
-%ifarch %{ix86}
-%patch400 -p1
+
+%patch42 -p1
+%patch43 -p1
+
+# Remove requires to libglvnd/libglvnd-devel from baselibs.conf when
+# disabling libglvnd build; ugly ...
+%if 0%{?libglvnd} == 0
+grep -v libglvnd $RPM_SOURCE_DIR/baselibs.conf > $RPM_SOURCE_DIR/temp && \
+  mv $RPM_SOURCE_DIR/temp $RPM_SOURCE_DIR/baselibs.conf
 %endif
 
 # Remove requires to vulkan libs from baselibs.conf on platforms
 # where vulkan build is disabled; ugly ...
 %if 0%{?with_vulkan} == 0
-grep -v -i vulkan "%{_sourcedir}/baselibs.conf" >"%{_sourcedir}/temp" && \
-  mv "%{_sourcedir}/temp" "%{_sourcedir}/baselibs.conf"
-%endif
-
-# Avoid build error for PowerPC
-# https://bugzilla.opensuse.org/show_bug.cgi?id=1171045
-%ifarch ppc64 ppc64le
-sed -i -e s/cpp_std=gnu++11/cpp_std=gnu++14/g meson.build
+grep -v -i vulkan $RPM_SOURCE_DIR/baselibs.conf > $RPM_SOURCE_DIR/temp && \
+  mv $RPM_SOURCE_DIR/temp $RPM_SOURCE_DIR/baselibs.conf
 %endif
 
 %build
-# try to avoid OOM on ppc64 (boo#1194739)
-%ifarch ppc64 ppc64le
-%limit_build -m 1024
-%endif
-
-egl_platforms=x11,wayland
-
-%meson \
-            --auto-features=disabled \
-%if %{drivers}
-            -Dgles1=false \
-            -Dgles2=false \
-            -Degl=true \
-            -Dglx=disabled \
-            -Dosmesa=false \
+%if 0%{?suse_version} > 1320 || (0%{?sle_version} >= 120300 && 0%{?is_opensuse})
+egl_platforms=x11,drm,wayland
 %else
-            -Dglvnd=true \
-            -Dgles1=true \
-            -Dgles2=true \
-            -Degl=true \
-            -Dosmesa=true \
-            -Dglx=auto \
-            -Dllvm=false \
-            -Dvulkan-drivers= \
+egl_platforms=x11,drm
 %endif
-            -Dplatforms=$egl_platforms \
-            -Ddri3=true \
-            -Dshared-glapi=true \
-%if 0%{?with_nine}
-            -Dgallium-nine=true \
+autoreconf -fvi
+
+%configure \
+%if 0%{?libglvnd}
+           --enable-libglvnd \
 %endif
+           --enable-gles1 \
+           --enable-gles2 \
+           --enable-dri \
+           --with-platforms=$egl_platforms \
+           --enable-shared-glapi \
+           --enable-texture-float \
+           --enable-osmesa \
+           --enable-dri3 \
+           %{?with_nine:--enable-nine} \
 %if %{glamor}
-            -Dgbm=true \
+           --enable-gbm \
+           --enable-glx-tls \
 %endif
 %if 0%{with_opencl}
-            -Dgallium-opencl=icd \
-%if 0%{?suse_version} >= 1550
-            --sysconfdir=%{_datadir} \
+           --enable-opencl \
+           --enable-opencl-icd \
 %endif
+           --with-dri-searchpath=%{_libdir}/dri \
+%ifarch aarch64 %arm ppc64 ppc64le s390x %ix86 x86_64
+           --enable-llvm \
+           --enable-llvm-shared-libs \
 %endif
-            -Ddri-search-path=%{_libdir}/dri \
-%if 0%{with_llvm}
-            -Dllvm=true \
-            -Dshared-llvm=true \
-%endif
-%if %{drivers}
-%if %{gallium_loader}
-            -Dgallium-vdpau=true \
-            -Dgallium-xvmc=true \
-            -Dgallium-va=true \
-            -Dgallium-xa=true \
-%endif
+           --enable-vdpau \
+           --enable-va \
+           --enable-xvmc \
 %if 0%{with_vulkan}
-            -Dvulkan-drivers=%{?vulkan_drivers} \
-            -Dvulkan-layers=device-select,overlay \
-%else
-            -Dvulkan-drivers= \
+           --with-vulkan-drivers=intel,radeon \
 %endif
-  %ifarch %{ix86} x86_64
-            -Ddri-drivers=i915,i965,nouveau,r100,r200 \
-            -Dgallium-drivers=r300,r600,radeonsi,nouveau,swrast,svga,virgl,iris,crocus \
-  %else
-  %ifarch %{arm} aarch64
-            -Ddri-drivers=nouveau \
-            -Dgallium-drivers=r300,r600,radeonsi,nouveau,swrast,virgl,freedreno,vc4,etnaviv,lima,panfrost,kmsro,v3d \
-  %else
-  %ifarch ppc64 ppc64le riscv64
-            -Ddri-drivers=nouveau \
-            -Dgallium-drivers=r300,r600,radeonsi,nouveau,swrast \
-  %else
-            -Ddri-drivers= \
-            -Dgallium-drivers=swrast \
-  %endif
-  %endif
-  %endif
-%else
-            -Ddri-drivers= \
-            -Dgallium-drivers=swrast \
+%ifarch %ix86 x86_64
+           --enable-xa \
+           --with-dri-drivers=i915,i965,nouveau,r200,radeon \
+           --with-gallium-drivers=r300,r600,radeonsi,nouveau,swrast,svga,virgl \
 %endif
-%ifarch aarch64 %{ix86} x86_64 ppc64le s390x
-            -Dvalgrind=true \
+%ifarch %arm aarch64
+           --enable-xa \
+           --with-dri-drivers=nouveau \
+           --with-gallium-drivers=r300,r600,nouveau,swrast,freedreno,vc4 \
 %endif
-            -Db_ndebug=true \
-            -Dc_args="%{optflags}" \
-%ifarch %ix86
-            -Dcpp_args="$(echo %{optflags}|sed 's/-flto=auto//')"
-%else
-            -Dcpp_args="%{optflags}"
+%ifarch ppc64 ppc64le
+           --enable-xa \
+           --with-dri-drivers=nouveau \
+           --with-gallium-drivers=r300,r600,nouveau,swrast \
 %endif
-
-%meson_build
+%ifarch ia64 ppc hppa s390 s390x
+           --with-dri-drivers=swrast \
+           --with-gallium-drivers=swrast \
+%endif
+        CFLAGS="%{optflags} -DNDEBUG"
+make %{?_smp_mflags}
 
 %install
-%meson_install
+make DESTDIR=%{buildroot} install %{?_smp_mflags}
 find %{buildroot} -type f -name "*.la" -delete -print
 
-# libwayland-egl is provided by wayland itself
-rm -f %{buildroot}/%{_libdir}/libwayland-egl.so*
-rm -f %{buildroot}/%{_libdir}/pkgconfig/wayland-egl.pc
-
-%if %{drivers}
-# Delete things that we do not package in the Mesa-drivers variant, but can
-# not disable from buildling and installing.
-
-# in Mesa
-rm -rf %{buildroot}/%{_datadir}/drirc.d
-
-rm -f %{buildroot}/%{_libdir}/libEGL.so*
-# in Mesa-libEGL-devel
-rm %{buildroot}/%{_includedir}/EGL/egl.h
-rm %{buildroot}/%{_includedir}/EGL/eglext.h
-rm %{buildroot}/%{_includedir}/EGL/eglextchromium.h
-rm %{buildroot}/%{_includedir}/EGL/eglmesaext.h
-rm %{buildroot}/%{_includedir}/EGL/eglplatform.h
-rm %{buildroot}/%{_libdir}/pkgconfig/egl.pc
-
-# in Mesa-libGL-devel
-rm -rf %{buildroot}/%{_includedir}/GL
-
-# in Mesa-libglapi0
-rm %{buildroot}/%{_libdir}/libglapi.so*
-
-# in libwayland-egl1
-rm -f %{buildroot}/%{_libdir}/libwayland-egl.so*
-rm -f %{buildroot}/%{_libdir}/pkgconfig/wayland-egl.pc
-
-# in Mesa-dri-devel
-rm %{buildroot}/%{_libdir}/pkgconfig/dri.pc
-
-# in libgbm-devel
-rm %{buildroot}/%{_includedir}/gbm.h
-rm %{buildroot}/%{_libdir}/libgbm.so*
-rm %{buildroot}/%{_libdir}/pkgconfig/gbm.pc
-
-# in KHR-devel
-rm -rf %{buildroot}/%{_includedir}/KHR
-
-# workaround needed since Mesa 19.0.2
-rm -f %{buildroot}/%{_libdir}/vdpau/libvdpau_gallium.so
-
-# dropped with Mesa 21.1.0
-mkdir -p -m 755 %{buildroot}/%{_includedir}/vulkan
-
+%if 0%{?libglvnd} == 0
+# Make a symlink to libGL.so.1.2 for compatibility (bnc#809359, bnc#831306)
+test -f %{buildroot}%{_libdir}/libGL.so.1.2 || \
+  ln -s `readlink %{buildroot}%{_libdir}/libGL.so.1` %{buildroot}%{_libdir}/libGL.so.1.2
 %else
-
-rm -f %{buildroot}/%{_libdir}/dri/*_dri.so
-
 rm -f %{buildroot}%{_libdir}/libGLES*
 # glvnd needs a default provider for indirect rendering where it cannot
 # determine the vendor
 ln -s %{_libdir}/libGLX_mesa.so.0 %{buildroot}%{_libdir}/libGLX_indirect.so.0
-
-# pickup pkgconfig files from libglvnd build
-rm -f %{buildroot}/%{_libdir}/pkgconfig/{gl,egl,glesv1_cm,glesv2}.pc
-install -m 0644 /usr/share/doc/packages/libglvnd/pkgconfig/{gl,egl,glesv1_cm,glesv2}.pc \
-   %{buildroot}/%{_libdir}/pkgconfig/
+%endif
 
 for dir in ../xc/doc/man/{GL/gl,GL/glx}; do
  pushd $dir
    xmkmf -a
-   make %{?_smp_mflags} V=1
+   make %{?_smp_mflags}
    make install.man DESTDIR=%{buildroot} MANPATH=%{_mandir} LIBMANSUFFIX=3gl
  popd
 done
-%endif
 
 %fdupes -s %{buildroot}/%{_mandir}
-
-%if !%{drivers}
-# Use dummy README file that can be included in both Mesa and Mesa-32bit. This way Mesa-32bit will be build (otherwise it would be skipped as empty) and it can be used by the other *-32bit packages.
-echo "The \"Mesa\" package does not have the ability to render, but is supplemented by \"Mesa-dri\" and \"Mesa-gallium\" which contain the drivers for rendering" > docs/README.package.%{_arch}
-%endif
 
 %post   -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
-%post   libEGL1 -p /sbin/ldconfig
+%post   -n Mesa-libEGL1 -p /sbin/ldconfig
 
-%postun libEGL1 -p /sbin/ldconfig
+%postun -n Mesa-libEGL1 -p /sbin/ldconfig
 
-%post   libGL1 -p /sbin/ldconfig
+%post   -n Mesa-libGL1 -p /sbin/ldconfig
 
-%postun libGL1 -p /sbin/ldconfig
+%postun -n Mesa-libGL1 -p /sbin/ldconfig
+
+%if 0%{?libglvnd} == 0
+%post   -n Mesa-libGLESv1_CM1 -p /sbin/ldconfig
+
+%postun -n Mesa-libGLESv1_CM1 -p /sbin/ldconfig
+
+%post   -n Mesa-libGLESv2-2 -p /sbin/ldconfig
+
+%postun -n Mesa-libGLESv2-2 -p /sbin/ldconfig
+%endif
 
 %post   -n libOSMesa8 -p /sbin/ldconfig
 
@@ -961,80 +796,185 @@ echo "The \"Mesa\" package does not have the ability to render, but is supplemen
 
 %postun -n libxatracker2 -p /sbin/ldconfig
 
-%post   libglapi0 -p /sbin/ldconfig
+%post   -n libXvMC_nouveau -p /sbin/ldconfig
 
-%postun libglapi0 -p /sbin/ldconfig
+%postun -n libXvMC_nouveau -p /sbin/ldconfig
 
-%post -n Mesa-libd3d -p /sbin/ldconfig
+%post   -n libXvMC_r600 -p /sbin/ldconfig
 
-%postun -n Mesa-libd3d -p /sbin/ldconfig
+%postun -n libXvMC_r600 -p /sbin/ldconfig
 
-%if !%{drivers}
+%post   -n libvdpau_r300 -p /sbin/ldconfig
+
+%postun -n libvdpau_r300 -p /sbin/ldconfig
+
+%post   -n libvdpau_r600 -p /sbin/ldconfig
+
+%postun -n libvdpau_r600 -p /sbin/ldconfig
+
+%post   -n libvdpau_radeonsi -p /sbin/ldconfig
+
+%postun -n libvdpau_radeonsi -p /sbin/ldconfig
+
+%post   -n Mesa-libglapi0 -p /sbin/ldconfig
+
+%postun -n Mesa-libglapi0 -p /sbin/ldconfig
+
+%post   -n libwayland-egl1 -p /sbin/ldconfig
+
+%postun -n libwayland-egl1 -p /sbin/ldconfig
+
+%post libd3d -p /sbin/ldconfig
+
+%postun libd3d -p /sbin/ldconfig
+
+%post   libOpenCL -p /sbin/ldconfig
+
+%postun libOpenCL -p /sbin/ldconfig
+
+%post libva -p /sbin/ldconfig
+
+%postun libva -p /sbin/ldconfig
+
+%post -n libvulkan_intel -p /sbin/ldconfig
+
+%postun -n libvulkan_intel -p /sbin/ldconfig
+
 %files
-%license docs/license.rst
-%doc docs/README*
-%dir %{_datadir}/drirc.d
-%config %{_datadir}/drirc.d/*
+%defattr(-,root,root)
+%doc docs/README* docs/license.html
+%config %{_sysconfdir}/drirc
+%dir %{_libdir}/dri
+%{_libdir}/dri/*_dri.so
+%if 0%{?is_opensuse}
+%ifarch %ix86 x86_64 aarch64 %arm ppc64 ppc64le
+%exclude %{_libdir}/dri/nouveau_dri.so
+%exclude %{_libdir}/dri/nouveau_vieux_dri.so
+%endif
+%endif
+%if 0%{with_opencl}
+# only built with opencl
+%dir %{_libdir}/gallium-pipe/
+%{_libdir}/gallium-pipe/pipe_*.so
+%endif
+%if 0%{with_vulkan}
+%dir %{_datadir}/vulkan
+%dir %{_datadir}/vulkan/icd.d
+%endif
 
-%files libEGL1
+%files -n Mesa-libEGL1
+%defattr(-,root,root)
+%if 0%{?libglvnd}
 %{_libdir}/libEGL_mesa.so*
 %dir %{_datadir}/glvnd
 %dir %{_datadir}/glvnd/egl_vendor.d
 %{_datadir}/glvnd/egl_vendor.d/50_mesa.json
+%else
+%{_libdir}/libEGL.so.1*
+%endif
 
-%files libEGL-devel
+%files -n Mesa-libEGL-devel
+%defattr(-,root,root)
 %{_includedir}/EGL
+%{_includedir}/KHR
+%if !0%{?libglvnd}
+%{_libdir}/libEGL.so
+%endif
 %{_libdir}/pkgconfig/egl.pc
 
-%files KHR-devel
-%{_includedir}/KHR
-
-%files libGL1
+%files -n Mesa-libGL1
+%defattr(-,root,root)
+%if 0%{?libglvnd}
 %{_libdir}/libGLX_mesa.so*
 %{_libdir}/libGLX_indirect.so*
+%else
+%{_libdir}/libGL.so.1*
+%endif
 
-%files libGL-devel
+%files -n Mesa-libGL-devel
+%defattr(-,root,root)
 %dir %{_includedir}/GL
 %{_includedir}/GL/*.h
 %exclude %{_includedir}/GL/osmesa.h
+%if 0%{?libglvnd} == 0
+%{_libdir}/libGL.so
+%endif
 %{_libdir}/pkgconfig/gl.pc
 %{_mandir}/man3/gl[A-Z]*
 
-%files libGLESv1_CM-devel
+%files -n Mesa-libGLESv1_CM1
+%defattr(-,root,root)
+%if 0%{?libglvnd} == 0
+%{_libdir}/libGLESv1_CM.so.1*
+%endif
+
+%files -n Mesa-libGLESv1_CM-devel
+%defattr(-,root,root)
 %{_includedir}/GLES
+%if 0%{?libglvnd} == 0
+%{_libdir}/libGLESv1_CM.so
+%endif
 %{_libdir}/pkgconfig/glesv1_cm.pc
 
-%files libGLESv2-devel
+%files -n Mesa-libGLESv2-2
+%defattr(-,root,root)
+%if 0%{?libglvnd} == 0
+%{_libdir}/libGLESv2.so.2*
+%endif
+
+%files -n Mesa-libGLESv2-devel
+%defattr(-,root,root)
 %{_includedir}/GLES2
+%if 0%{?libglvnd} == 0
+%{_libdir}/libGLESv2.so
+%endif
 %{_libdir}/pkgconfig/glesv2.pc
 
-%files libGLESv3-devel
+%files -n Mesa-libGLESv3-devel
+%defattr(-,root,root)
 %{_includedir}/GLES3
+#%_libdir/libGLESv3.so
+#%_libdir/pkgconfig/glesv3.pc
 
 %files -n libOSMesa8
+%defattr(-,root,root)
 %{_libdir}/libOSMesa.so.8.0.0
 %{_libdir}/libOSMesa.so.8
 
 %files -n libOSMesa-devel
+%defattr(-,root,root)
 %{_includedir}/GL/osmesa.h
 %{_libdir}/libOSMesa.so
 %{_libdir}/pkgconfig/osmesa.pc
 
+%if 0%{?suse_version} > 1320 || (0%{?sle_version} >= 120300 && 0%{?is_opensuse})
+%files -n libwayland-egl1
+%defattr(-,root,root)
+%{_libdir}/libwayland-egl.so.1*
+
+%files -n libwayland-egl-devel
+%defattr(-,root,root)
+%{_libdir}/libwayland-egl.so
+%{_libdir}/pkgconfig/wayland-egl.pc
+%endif
+
 %files -n libgbm1
+%defattr(-,root,root)
 %{_libdir}/libgbm.so.1*
 
 %files -n libgbm-devel
+%defattr(-,root,root)
 %{_includedir}/gbm.h
 %{_libdir}/libgbm.so
 %{_libdir}/pkgconfig/gbm.pc
-%endif
 
-%if %{drivers}
-%ifarch aarch64 %{ix86} x86_64 %{arm} ppc64 ppc64le riscv64
+%ifarch aarch64 %ix86 x86_64 %arm ppc64 ppc64le
 %files -n libxatracker2
+%defattr(-,root,root)
 %{_libdir}/libxatracker.so.2*
 
 %files -n libxatracker-devel
+%defattr(-,root,root)
 %{_includedir}/xa_*.h
 %{_libdir}/libxatracker.so
 %{_libdir}/pkgconfig/xatracker.pc
@@ -1042,14 +982,23 @@ echo "The \"Mesa\" package does not have the ability to render, but is supplemen
 
 %if %{xvmc_support}
 %files -n libXvMC_nouveau
-%{_libdir}/libXvMCnouveau.so*
+%defattr(-,root,root)
+%{_libdir}/libXvMCnouveau.so
+%{_libdir}/libXvMCnouveau.so.1
+%{_libdir}/libXvMCnouveau.so.1.0
+%{_libdir}/libXvMCnouveau.so.1.0.0
 
 %files -n libXvMC_r600
-%{_libdir}/libXvMCr600.so*
+%defattr(-,root,root)
+%{_libdir}/libXvMCr600.so
+%{_libdir}/libXvMCr600.so.1
+%{_libdir}/libXvMCr600.so.1.0
+%{_libdir}/libXvMCr600.so.1.0.0
 %endif
 
 %if %{vdpau_nouveau}
 %files -n libvdpau_nouveau
+%defattr(-,root,root)
 %{_libdir}/vdpau/libvdpau_nouveau.so
 %{_libdir}/vdpau/libvdpau_nouveau.so.1
 %{_libdir}/vdpau/libvdpau_nouveau.so.1.0
@@ -1058,161 +1007,99 @@ echo "The \"Mesa\" package does not have the ability to render, but is supplemen
 
 %if %{vdpau_radeon}
 %files -n libvdpau_r300
+%defattr(-,root,root)
 %{_libdir}/vdpau/libvdpau_r300.so
 %{_libdir}/vdpau/libvdpau_r300.so.1
 %{_libdir}/vdpau/libvdpau_r300.so.1.0
 %{_libdir}/vdpau/libvdpau_r300.so.1.0.0
 
 %files -n libvdpau_r600
+%defattr(-,root,root)
 %{_libdir}/vdpau/libvdpau_r600.so
 %{_libdir}/vdpau/libvdpau_r600.so.1
 %{_libdir}/vdpau/libvdpau_r600.so.1.0
 %{_libdir}/vdpau/libvdpau_r600.so.1.0.0
 %endif
 
-%ifarch %{ix86} x86_64 ppc64 ppc64le %{arm} aarch64 riscv64
+%ifarch %ix86 x86_64
 %files -n libvdpau_radeonsi
+%defattr(-,root,root)
 %{_libdir}/vdpau/libvdpau_radeonsi.so
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1.0
 %{_libdir}/vdpau/libvdpau_radeonsi.so.1.0.0
 %endif
-%endif
 
-%if !%{drivers}
-%files libglapi0
+%files -n Mesa-libglapi0
+%defattr(-,root,root)
 %{_libdir}/libglapi.so.0*
 
-%files libglapi-devel
+%files -n Mesa-libglapi-devel
+%defattr(-,root,root)
 %{_libdir}/libglapi.so
-%endif
 
-%if %{drivers}
-%files -n Mesa-dri
-%dir %{_libdir}/dri
-%{_libdir}/dri/*_dri.so
-%ifarch %{ix86} x86_64 aarch64 %{arm} ppc64 ppc64le riscv64
-%exclude %{_libdir}/dri/nouveau_dri.so
-%exclude %{_libdir}/dri/nouveau_vieux_dri.so
-%endif
-%ifarch %{arm} aarch64
-%exclude %{_libdir}/dri/vc4_dri.so
-%endif
+%files -n Mesa-dri-devel
+%defattr(-,root,root)
+%{_includedir}/GL/internal
+%{_libdir}/pkgconfig/dri.pc
 
-%if 0%{with_opencl}
-# only built with opencl
-%files -n Mesa-gallium
-%dir %{_libdir}/gallium-pipe/
-%{_libdir}/gallium-pipe/pipe_*.so
-%endif
-
-%ifarch %{ix86} x86_64 aarch64 %{arm} ppc64 ppc64le riscv64
+%if 0%{?is_opensuse}
+%ifarch %ix86 x86_64 aarch64 %arm ppc64 ppc64le
 %files -n Mesa-dri-nouveau
 %{_libdir}/dri/nouveau_dri.so
 %{_libdir}/dri/nouveau_vieux_dri.so
 %endif
-
-%ifarch aarch64 %{arm}
-%files -n Mesa-dri-vc4
-%{_libdir}/dri/vc4_dri.so
 %endif
-
-# drivers
-%endif
-
-%if !%{drivers}
-%files dri-devel
-%{_includedir}/GL/internal
-%{_libdir}/pkgconfig/dri.pc
 
 %files devel
-%doc docs/*.rst
-
-# !drivers
-%endif
+%defattr(-,root,root)
+%doc docs/*.html
 
 %if 0%{?with_nine}
-%files -n Mesa-libd3d
+%files libd3d
+%defattr(-,root,root)
 %dir %{_libdir}/d3d/
 %{_libdir}/d3d/*.so.*
+#%%{_sysconfdir}/OpenCL/vendors/mesa.icd
 
-%files -n Mesa-libd3d-devel
+%files libd3d-devel
+%defattr(-,root,root)
 %{_libdir}/pkgconfig/d3d.pc
 %{_includedir}/d3dadapter/
 %{_libdir}/d3d/*.so
 %endif
 
 %if 0%{with_opencl}
-%files -n Mesa-libOpenCL
-%if 0%{?suse_version} >= 1550
-%dir %{_datadir}/OpenCL
-%dir %{_datadir}/OpenCL/vendors
-%{_datadir}/OpenCL/vendors/mesa.icd
-%else
+%files libOpenCL
+%defattr(-,root,root)
 %dir %{_sysconfdir}/OpenCL
 %dir %{_sysconfdir}/OpenCL/vendors
 %{_sysconfdir}/OpenCL/vendors/mesa.icd
-%endif
 %{_libdir}/libMesaOpenCL.so*
 %endif
 
-%if %{drivers}
-%ifarch %{ix86} x86_64 aarch64 %{arm} ppc64 ppc64le riscv64
-%files -n Mesa-libva
+%ifarch %ix86 x86_64 aarch64 %arm ppc64 ppc64le
+%files libva
+%defattr(-,root,root)
+%dir %{_libdir}/dri
 %{_libdir}/dri/*_drv_video.so
-%endif
 %endif
 
 %if 0%{with_vulkan}
-%ifarch %{ix86} x86_64
 %files -n libvulkan_intel
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/icd.d
+%defattr(-,root,root)
 %{_datadir}/vulkan/icd.d/intel_icd.*.json
 %{_libdir}/libvulkan_intel.so
-%endif
+
+%files libVulkan-devel
+%defattr(-,root,root)
+%dir %_includedir/vulkan
+%_includedir/vulkan
 
 %files -n libvulkan_radeon
+%defattr(-,root,root)
 %{_libdir}/libvulkan_radeon.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/icd.d
 %{_datadir}/vulkan/icd.d/radeon_icd.*.json
-
-%files -n libvulkan_lvp
-%{_libdir}/libvulkan_lvp.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/icd.d
-%{_datadir}/vulkan/icd.d/lvp_icd.*.json
-
-%ifarch %{arm} aarch64
-%files -n libvulkan_broadcom
-%{_libdir}/libvulkan_broadcom.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/icd.d
-%{_datadir}/vulkan/icd.d/broadcom_icd.*.json
-
-%files -n libvulkan_freedreno
-%{_libdir}/libvulkan_freedreno.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/icd.d
-%{_datadir}/vulkan/icd.d/freedreno_icd.*.json
-%endif
-
-%files -n Mesa-libVulkan-devel
-%dir %{_includedir}/vulkan
-
-%files -n Mesa-vulkan-device-select
-%{_libdir}/libVkLayer_MESA_device_select.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/implicit_layer.d
-%{_datadir}/vulkan/implicit_layer.d/VkLayer_MESA_device_select.json
-
-%files -n Mesa-vulkan-overlay
-%{_bindir}/mesa-overlay-control.py
-%{_libdir}/libVkLayer_MESA_overlay.so
-%dir %{_datadir}/vulkan
-%dir %{_datadir}/vulkan/explicit_layer.d
-%{_datadir}/vulkan/explicit_layer.d/VkLayer_MESA_overlay.json
 %endif
 
 %changelog

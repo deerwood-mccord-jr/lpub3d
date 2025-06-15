@@ -1,8 +1,10 @@
 # LDView library common directives
 
-# common directives
-COMMON = LDView
-include($${PWD}/../../../common.pri)
+# Get fine-grained host identification
+win32:HOST = $$system(systeminfo | findstr /B /C:\"OS Name\")
+unix:!macx:HOST = $$system(. /etc/os-release 2>/dev/null; [ -n \"$PRETTY_NAME\" ] && echo \"$PRETTY_NAME\" || echo `uname`)
+macx:HOST = $$system(echo `sw_vers -productName` `sw_vers -productVersion`)
+isEmpty(HOST):HOST = UNKNOWN HOST
 
 # The ABI version.
 VER_MAJ = 4
@@ -14,9 +16,53 @@ else:  VERSION = $$VER_MAJ"."$$VER_MIN"."$$VER_PAT              # major.minor.pa
 DEFINES += VERSION_INFO=\\\"$$VER_MAJ"."$$VER_MIN"."$$VER_PAT\\\"
 
 static|staticlib {
-    BUILD  = $$upper($${BUILD}) STATIC
+    BUILD  = STATIC
 } else {
-    BUILD  = $$upper($${BUILD}) SHARED
+    BUILD  = SHARED
+}
+
+# Qt/OSMesa/WGL library identifiers
+ldviewqt {
+    contains(DEFINES, _OSMESA): \
+    DEFINES        -= _OSMESA
+    DEFINES        += _QT
+    QT             += core
+    CONFIG         += qt
+    CONFIG         += CUI_QT
+    POSTFIX        = -qt$${QT_MAJOR_VERSION}
+    BUILD          += QT
+} else:msys:ldviewwgl {
+    contains(DEFINES, _OSMESA): \
+    DEFINES        -= _OSMESA
+    contains(DEFINES, _QT): \
+    DEFINES        -= _QT
+    DEFINES        += _LP3D_CUI_WGL
+    QT             -= core
+    CONFIG         += CUI_WGL
+    POSTFIX         = -wgl
+    BUILD          += WGL
+} else:!win32-msvc* {
+    contains(DEFINES, _QT): \
+    DEFINES        -= _QT
+    DEFINES        += _OSMESA
+    QT             -= core
+    CONFIG         += OSMesa
+    POSTFIX         = -osmesa
+    BUILD          += OSMESA
+}
+
+# for aarch64, QT_ARCH = arm64, for arm7l, QT_ARCH = arm
+BUILD_ARCH = $$(TARGET_CPU)
+isEmpty(BUILD_ARCH): \
+!contains(QT_ARCH, unknown): \
+BUILD_ARCH = $$QT_ARCH
+else: isEmpty(BUILD_ARCH): BUILD_ARCH = $$(TARGET_CPU)
+if (contains(BUILD_ARCH,x86_64)|contains(BUILD_ARCH,arm64)|contains(BUILD_ARCH,aarch64)) {
+    ARCH     = 64
+    LIB_ARCH = 64
+} else {
+    ARCH     = 32
+    LIB_ARCH =
 }
 
 # build type
@@ -27,7 +73,7 @@ CONFIG(debug, debug|release) {
     BUILD += RELEASE
     DESTDIR = $$join(ARCH,,,bit_release)
 }
-BUILD  += BUILD ON $$upper($${HOST})
+BUILD  += BUILD ON $$upper($$HOST)
 
 CONFIG += incremental
 
@@ -47,10 +93,10 @@ if (win32|static|staticlib) {
 # To enable this option, set SYSTEM_PREFIX_ below along with the directive CONFIG+=USE_LDV_SYSTEM_LIBS.
 
 # 3rdParty libraries - compiled from source during build
-3RD_PARTY_PREFIX_  = $${_PRO_FILE_PWD_}/../3rdParty
+3RD_PARTY_PREFIX_  = $$_PRO_FILE_PWD_/../3rdParty
 
 # pre-compiled libraries heaers location
-LIBINC_            = $${_PRO_FILE_PWD_}/../include       # zlib.h and zconf.h, glext and wglext headers
+LIBINC_            = $$_PRO_FILE_PWD_/../include       # zlib.h and zconf.h, glext and wglext headers
 
 # You can modify paths below to match your system
 # for default settings, place headers in ../include/..
@@ -84,9 +130,11 @@ win32-msvc* {
     3DS_INC     = $${3RD_PARTY_PREFIX_}/lib3ds
     LIBS_INC   += $${3DS_INC}
 }
-# Always build tinyxml
-TINYXML_INC     = $${3RD_PARTY_PREFIX_}/tinyxml
-LIBS_INC       += $${TINYXML_INC}
+
+USE_LDV_3RD_PARTY_LIBS:USE_LDV_SYSTEM_LIBS {
+    message("~~~ NOTICE: 'USE_LDV_3RD_PARTY_LIBS' and 'USE_LDV_SYSTEM_LIBS' Specified. Using 'USE_LDV_3RD_PARTY_LIBS' ~~~")
+    CONFIG -= USE_LDV_SYSTEM_LIBS
+}
 
 # 3rd party library headers
 # ===============================
@@ -94,6 +142,7 @@ USE_LDV_3RD_PARTY_LIBS {
     # headers
     GL2PS_INC   = $${3RD_PARTY_PREFIX_}/gl2ps
     MINIZIP_INC = $${3RD_PARTY_PREFIX_}/minizip
+    TINYXML_INC = $${3RD_PARTY_PREFIX_}/tinyxml
     3DS_INC     = $${3RD_PARTY_PREFIX_}/lib3ds
     JPEG_INC    = $${3RD_PARTY_PREFIX_}/libjpeg
     PNG_INC     = $${3RD_PARTY_PREFIX_}/libpng
@@ -113,7 +162,6 @@ unix|msys {
     # append system library paths
     # ===============================
     SYS_LIBINC_          = $${SYSTEM_PREFIX_}/include
-    LIBS_INC            += $${SYS_LIBINC_}
     macx {
         contains(QT_ARCH,arm64) {
             SYS_LIBINC_  = /opt/homebrew/include
@@ -121,17 +169,16 @@ unix|msys {
             SYS_LIBINC_  = $${SYSTEM_PREFIX_}/local/include
         }
         SYS_LIBINC_X11_  = $${SYSTEM_PREFIX_}/X11/include
-        LIBS_INC        += $${SYS_LIBINC_X11_}
+        SYS_LIBINC_     += $${SYS_LIBINC_X11_}
     }
+    LIBS_INC            += $${SYS_LIBINC_}
     USE_LDV_SYSTEM_LIBS {
         # reset to system library paths
         # ===============================
         LIBS_INC         = $${SYS_LIBINC_}
-        macx {
-            LIBS_INC    += $${SYS_LIBINC_X11_}
-        }
         # ---------------------------
         GL2PS_INC        = $${SYS_LIBINC_}
+        TINYXML_INC      = $${SYS_LIBINC_}
         MINIZIP_INC      = $${SYS_LIBINC_}
         3DS_INC          = $${SYS_LIBINC_}
         JPEG_INC         = $${SYS_LIBINC_}
@@ -143,10 +190,26 @@ unix|msys {
 
 # only launch headers found display once - during TCFoundation build
 equals(TARGET, TCFoundation) {
-    # Always build tinyxml, libgl2ps for MSVC and lib3ds except for MSVC
+    # Except for MSVC (uses pre-built), always build lib3ds
     USE_LDV_3RD_PARTY_LIBS {
+        CONFIG += BUILD_3DS
+        CONFIG += BUILD_TINYXML
+        !USE_SYSTEM_JPEG: \
+        CONFIG += BUILD_JPEG
+        !USE_SYSTEM_PNG: \
+        CONFIG += BUILD_PNG
+        !USE_SYSTEM_GL2PS: \
+        CONFIG += BUILD_GL2PS
+        !USE_SYSTEM_MINIZIP: \
+        CONFIG += BUILD_MINIZIP
+        !USE_SYSTEM_ZLIB: \
+        CONFIG += BUILD_ZLIB
         message("~~~ LDVQt header option - Use 3rdParty library headers ~~~")
     } else {
+        win32-msvc*: \
+        CONFIG += BUILD_GL2PS BUILD_TINYXML
+        else: \
+        CONFIG += BUILD_3DS
         USE_LDV_SYSTEM_LIBS {
             message("~~~ LDVQt header option - Use system library headers ~~~")
         } else {
@@ -211,23 +274,66 @@ equals(TARGET, TCFoundation) {
 }
 
 # objects directory
-OBJECTS_DIR      = $${DESTDIR}/.obj$${POSTFIX}
+OBJECTS_DIR      = $$DESTDIR/.obj$${POSTFIX}
 
 # USE GNU_SOURCE
 unix|msys:!macx: DEFINES += _GNU_SOURCE
+
+# USE CPP 11
+contains(USE_CPP11,NO): \
+message("~~~ DO NOT USE CPP11 SPECIFIED ~~~")
+else: \
+DEFINES += USE_CPP11
+
+# Qt5 QMake flags
+contains(QT_VERSION, ^5\\..*) {
+    win32-msvc* {
+        QMAKE_CXXFLAGS += /std:c++17
+    }
+    unix|msys:!macx {
+        GCC_VERSION = $$system(g++ -dumpversion)
+        greaterThan(GCC_VERSION, 4.8) {
+            QMAKE_CXXFLAGS += -std=c++11
+        } else {
+            QMAKE_CXXFLAGS += -std=c++0x
+        }
+    }
+}
+
+# Qt6 QMake flags
+contains(QT_VERSION, ^6\\..*) {
+    win32-msvc* {
+        QMAKE_CXXFLAGS += /std:c++17
+    }
+    macx {
+        QMAKE_CXXFLAGS+= -std=c++17
+    }
+    unix|msys:!macx {
+        GCC_VERSION = $$system(g++ -dumpversion)
+        greaterThan(GCC_VERSION, 5) {
+            QMAKE_CXXFLAGS += -std=c++17
+        } else {
+            QMAKE_CXXFLAGS += -std=c++0x
+        }
+    }
+}
 
 # Boost
 !contains(CONFIG, USE_BOOST): {
     DEFINES     += _NO_BOOST
 } else:!msys {
-    INCLUDEPATH += $${_PRO_FILE_PWD_}/../boost/include
-    LIBS        += -L$${_PRO_FILE_PWD_}/../boost/lib
+    INCLUDEPATH += $$_PRO_FILE_PWD_/../boost/include
+    LIBS        += -L$$_PRO_FILE_PWD_/../boost/lib
 }
 
 # Platform-specific
 win32 {
     QMAKE_EXT_OBJ = .obj
+
     win32-msvc* {
+        DEFINES  += \
+            _CRT_SECURE_NO_WARNINGS \
+            _CRT_NONSTDC_NO_WARNINGS=1
         QMAKE_CXXFLAGS += \
             /FI winsock2.h /FI winsock.h \
             /wd4675
@@ -255,3 +361,54 @@ unix {
 # Includes
 INCLUDEPATH += . .. $${LIBS_INC}
 #message("~~~ DEBUG_INCLUDE_PATHS: $$INCLUDEPATH ~~~")
+
+# suppress warnings
+unix|msys: {
+QMAKE_CFLAGS_WARN_ON = \
+                     -Wall -W \
+                     -Wno-format-security \
+                     -Wno-unused-parameter \
+                     -Wno-parentheses \
+                     -Wno-unused-variable \
+                     -Wno-deprecated-declarations \
+                     -Wno-return-type \
+                     -Wno-sign-compare \
+                     -Wno-uninitialized \
+                     -Wno-unused-result \
+                     -Wno-implicit-fallthrough \
+                     -Wno-stringop-overflow
+CUI_WGL: \
+QMAKE_CFLAGS_WARN_ON += \
+                     -Wno-missing-field-initializers \
+                     -Wno-unused-but-set-variable \
+                     -Wno-switch
+msys {
+QMAKE_CFLAGS_WARN_ON += \
+                     -Wno-attributes \
+                     -Wno-unknown-pragmas \
+                     -Wno-type-limits \
+                     -Wno-cast-function-type \
+                     -Wno-implicit-fallthrough \
+                     -Wno-stringop-truncation \
+                     -Wno-calloc-transposed-args
+QMAKE_CXXFLAGS_WARN_ON += $${QMAKE_CFLAGS_WARN_ON}
+QMAKE_CXXFLAGS_WARN_ON += \
+                     -Wno-template-id-cdtor \
+} else {
+QMAKE_CFLAGS_WARN_ON += \
+                     -Wno-clobbered
+} # msys
+macx {
+QMAKE_CFLAGS_WARN_ON += \
+                     -Wno-implicit-function-declaration \
+                     -Wno-incompatible-pointer-types-discards-qualifiers \
+                     -Wno-incompatible-pointer-types \
+                     -Wno-undefined-bool-conversion \
+                     -Wno-invalid-source-encoding \
+                     -Wno-mismatched-new-delete \
+                     -Wno-for-loop-analysis \
+                     -Wno-int-conversion \
+                     -Wno-reorder
+QMAKE_CXXFLAGS_WARN_ON += $${QMAKE_CFLAGS_WARN_ON}
+} # macx
+} # unix|msys

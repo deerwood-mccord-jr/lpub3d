@@ -1,13 +1,14 @@
 #
 # spec file for LPub3D package
 #
-# Last Update: June 15, 2025
+# Last Update: June 16, 2025
 # Copyright © 2017 - 2025 Trevor SANDY
 # Using RPM Spec file examples by Thomas Baumgart, Peter Bartfai and others
 # This file and all modifications and additions to the pristine
 # package are under the same license as the package itself.
 #
 # please send bugfixes or comments to Trevor SANDY <trevor.sandy@gmail.com>
+#
 
 # set packing platform
 %if %(if [[ "%{vendor}" == obs://* ]]; then echo 1; else echo 0; fi)
@@ -30,24 +31,18 @@
 %endif
 
 # set target platform id
-# distinguish between openSUSE Leap, openSUSE, and SUSE Linux Enterprise Server
-# openSUSE Leap Factory and versions equal to or greater than 16.0
-%if (0%{?suse_version}>1599 && 0%{?suse_version}<=1699 && 0%{?is_opensuse})
-%define dist .openSUSELeap%(echo %{suse_version} | sed 's/0$//')
-%if (0%{?suse_version}==1699)
-%define suse_dist_name %(echo openSUSE Leap Factory)
-%define suse_dist_label %(echo %{suse_dist_name}..........%{suse_version})
-%define suse_code osf
+# distinguish between SLE, openSUSE Leap and openSUSE
+# SUSE Linux Enterprise Server
+%if (0%{?sle_version}>=120000 && 0%{?sle_version}<=150600 && !0%{?is_opensuse})
+%define dist .SLE%(echo %{sle_version} | sed 's/0$//')
+%define suse_dist_name %(echo SUSE Linux Enterprise Server)
+%define suse_dist_label %(echo %{suse_dist_name}...%{sle_version})
+%define suse_dist_pretty_name %(echo %{suse_dist_name} %{sle_version})
+%define suse_dist_version %{sle_version}
+%define suse_platform_code sle
+%define build_sdl2 1
 %else
-%define suse_dist_name %(echo openSUSE Leap)
-%define suse_dist_label %(echo %{suse_dist_name}..................%{suse_version})
-%define suse_code osl
-%endif
-%define suse_dist_pretty_name %(echo %{suse_dist_name} %{suse_version})
-%define suse_dist_version %{suse_version}
-%define suse_platform_code %{suse_code}
-%else
-# openSUSE Leap up to 15.6
+# openSUSE Leap
 %if (0%{?sle_version}>=120000 && 0%{?sle_version}<=150600 && 0%{?is_opensuse})
 %define dist .openSUSELeap%(echo %{sle_version} | sed 's/0$//')
 %define suse_dist_name %(echo openSUSE Leap)
@@ -65,23 +60,9 @@
 %define suse_dist_pretty_name %(echo %{suse_dist_name} %{suse_version})
 %define suse_dist_version %{suse_version}
 %define suse_platform_code os
-%else
-# SUSE Linux Enterprise Server
-%if (0%{?sle_version}>=120000 && 0%{?sle_version}<=150600 && !0%{?is_opensuse})
-%define dist .SLE%(echo %{sle_version} | sed 's/0$//')
-%define suse_dist_name %(echo SUSE Linux Enterprise Server)
-%define suse_dist_label %(echo %{suse_dist_name}...%{sle_version})
-%define suse_dist_pretty_name %(echo %{suse_dist_name} %{sle_version})
-%define suse_dist_version %{sle_version}
-%define suse_platform_code sle
-%define build_sdl2 1
 %endif
 %endif
 %endif
-%endif
-
-# Until LDView converts to tinyxml2, build tinyxml from source
-%define build_tinyxml 1
 
 %if 0%{?rhel_version}
 %define build_sdl2 1
@@ -141,7 +122,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4231
+Version: 2.4.9.4232
 Release: <B_CNT>%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -167,7 +148,9 @@ BuildRequires: libverto-libevent
 %endif
 
 %if 0%{?fedora_version} || 0%{?centos_version} || 0%{?rhel_version} || 0%{?scientificlinux_version} || 0%{?openeuler_version} || 0%{?almalinux_version}
+%if 0%{?fedora_version} || 0%{?centos_version}==800
 BuildRequires: hostname
+%endif
 %if !0%{?rhel_version}
 BuildRequires: OpenEXR-devel
 %if 0%{?centos_version}!=800
@@ -204,11 +187,12 @@ BuildRequires: libXext-devel
 %if 0%{?centos_version}==700
 %define build_sdl2 1
 %endif
+%define build_tinyxml 1
 %define build_gl2ps 1
 %endif
 
 %if 0%{?fedora_version}
-BuildRequires: libjpeg-turbo-devel, gl2ps-devel
+BuildRequires: libjpeg-turbo-devel, tinyxml-devel, gl2ps-devel
 BuildRequires: qt5-linguist, SDL2-devel
 %if 0%{?fedora_version}>30
 BuildRequires: autoconf >= 2.69
@@ -239,23 +223,10 @@ BuildRequires: openssl-devel, storaged
 BuildRequires: freeglut-devel
 %endif
 BuildRequires: libqt5-qtbase-devel
-# exclude libOSMesa from openSUSE:Leap:Factory - suse_version 1699
-%if (0%{?suse_version}==1699)
-# set platform flags that will build OSMesa from Mesa-Amber - Mesa 21.3.9
-%define build_osmesa 1
-%define mesa_amber 1
-# LLVM is not needed for default OSMesa-amber configuration
-%define with_llvm 0
-%else
-BuildRequires: libOSMesa-devel
-# update_desktop_file is deprecated
-BuildRequires: update-desktop-files
-%endif
-BuildRequires: glu-devel, openexr-devel
+BuildRequires: libOSMesa-devel, glu-devel, openexr-devel
 BuildRequires: libpng16-compat-devel, libjpeg8-devel
-BuildRequires: hostname
+BuildRequires: update-desktop-files
 BuildRequires: zlib-devel
-BuildRequires: Mesa-libEGL-devel
 %if (0%{?suse_version}>1210 && 0%{?suse_version}!=1315 && 0%{?sle_version}!=150000 && 0%{?sle_version}!=150100 && 0%{?sle_version}!=150200 && 0%{?sle_version}!=150300 && 0%{?sle_version}!=150400)
 BuildRequires: gl2ps-devel
 %else
@@ -273,6 +244,7 @@ BuildRequires: Mesa-devel
 %if 0%{?buildservice}
 BuildRequires: -post-build-checks
 %endif
+%define build_tinyxml 1
 %endif
 
 %if 0%{?mageia_version}
@@ -280,7 +252,7 @@ BuildRequires: -post-build-checks
 #BuildRequires: qttools5
 %ifarch x86_64
 BuildRequires: lib64qt5base5-devel, lib64sdl2.0-devel, lib64osmesa-devel, lib64mesaglu1-devel, lib64freeglut-devel
-BuildRequires: lib64boost-devel, lib64gl2ps-devel, lib64tiff-devel
+BuildRequires: lib64boost-devel, lib64tinyxml-devel, lib64gl2ps-devel, lib64tiff-devel
 %if 0%{?mageia_version}>5
 BuildRequires: lib64openexr-devel
 %endif
@@ -292,7 +264,7 @@ BuildRequires: lib64openssl-devel
 %endif
 %else
 BuildRequires: libqt5base5-devel, libsdl2.0-devel, libosmesa-devel, libmesaglu1-devel, freeglut-devel
-BuildRequires: libboost-devel, libgl2ps-devel, libtiff-devel
+BuildRequires: libboost-devel, libtinyxml-devel, libgl2ps-devel, libtiff-devel
 %if 0%{?mageia_version}>5
 BuildRequires: libopenexr-devel
 %endif
@@ -306,6 +278,7 @@ BuildRequires: libopenssl-devel
 %endif
 
 %if 0%{?sle_version}
+%define build_tinyxml 1
 %define osmesa_found %(test -f /usr/lib/libOSMesa.so -o -f /usr/lib64/libOSMesa.so && echo 1 || echo 0)
 %if 0%{osmesa_found} != 1
 %define build_osmesa 1
@@ -313,7 +286,6 @@ BuildRequires: libopenssl-devel
 %if 0%{?buildservice}
 BuildRequires: -post-build-checks
 %endif
-BuildRequires: hostname
 Requires(post): desktop-file-utils
 %endif
 %if 0%{?scientificlinux_version}
@@ -377,147 +349,64 @@ BuildRequires: pkgconfig(sdl2)
 # ------------------------------
 # Build from source dependencies
 # ------------------------------
-# Mesa and libGLU dependencies
+# OSMesa and libGLU dependencies
 %if 0%{?build_osmesa}
+%define buildosmesa yes
 # libGLU build-from-source dependencies
 BuildRequires: gcc-c++
 BuildRequires: libtool
 BuildRequires: pkgconfig
 BuildRequires: pkgconfig(gl)
 # libMesa build-from-source dependencies
-%ifarch armv6l armv6hl
-%define _lto_cflags %{nil}
-%endif
-# ---
-%define drivers 0
-%define glamor 1
 %define _name_archive mesa
-%define _version 21.3.9
-%define with_opencl 0
-%define with_vulkan 0
-%define with_llvm 0
-# ---
-%ifarch %{ix86} x86_64 %{arm} aarch64
-%define gallium_loader 1
-%else
-%define gallium_loader 0
-%endif
-# ---
-%define xvmc_support 0
-%define vdpau_nouveau 0
-%define vdpau_radeon 0
-# ---
-%ifarch %{ix86} x86_64 aarch64 %{arm}
-%define xvmc_support 1
-%define vdpau_nouveau 1
-%define vdpau_radeon 1
-%endif
-# ---
-%ifarch %{ix86} x86_64 %{arm} aarch64
-%define with_nine 1
-%endif
-# ---
-%if 0%{gallium_loader}
-%define with_opencl 1
-%ifarch %{ix86} x86_64
-%define with_vulkan 1
-%define vulkan_drivers swrast,amd,intel
-%endif
-%ifarch %{arm} aarch64
-%define with_vulkan 1
-%define vulkan_drivers swrast,amd,broadcom,freedreno
-%endif
-%endif
-# ---
-%ifarch aarch64 %{arm}  s390x %{ix86} x86_64
-%define with_llvm 1
-%endif
-# ---
-%if 0%{with_opencl}
-%define have_gallium 1
-%else
-%define have_gallium 0
-%endif
-# ---
-%if %{drivers}
-%define glamor 0
-%else
-# No llvm dependencies
-%define with_llvm 0
-# OpenCL requires clang (LLVM)
-%define with_opencl 0
-# nine requires at least one non-swrast gallium driver
-%define with_nine 0
-# Not built because radeon driver is not built.
-%define vdpau_radeon 0
-# Not built because nouveau driver is not built.
-%define vdpau_nouveau 0
-# Not built. (Why?)
-%define xvmc_support 0
-# Vulkan includes radv driver which requires llvm
-%define with_vulkan 0
-%endif
-# ---
+%define _version 17.2.6
+BuildRequires: autoconf >= 2.60
+BuildRequires: automake
+BuildRequires: bison
 %if !0%{?rhel_version}
 BuildRequires: fdupes
 %endif
-BuildRequires:  bison
-BuildRequires:  fdupes
-BuildRequires:  flex
-BuildRequires:  gcc-c++
-BuildRequires:  glslang-devel
-BuildRequires:  imake
-BuildRequires:  libtool
-BuildRequires:  memory-constraints
-BuildRequires:  meson
-BuildRequires:  pkgconfig
-BuildRequires:  python3-base
-%if 0%{?suse_version} > 1320
-BuildRequires:  python3-mako
+BuildRequires: flex
+BuildRequires: gcc-c++
+BuildRequires: imake
+BuildRequires: libtool
+BuildRequires: pkgconfig
+%if 0%{?fedora_version} || 0%{?rhel_version} || 0%{?scientificlinux_version}
+BuildRequires: python
+BuildRequires: python-libs
+BuildRequires: pkgconfig(libdrm)
 %else
-BuildRequires:  python3-Mako
+BuildRequires: python-xml
+BuildRequires: python-base
+BuildRequires: pkgconfig(libdrm) >= 2.4.75
 %endif
-BuildRequires:  python3-xml
-BuildRequires:  pkgconfig(dri2proto)
-BuildRequires:  pkgconfig(dri3proto)
-BuildRequires:  pkgconfig(expat)
-BuildRequires:  pkgconfig(glproto)
-BuildRequires:  pkgconfig(libdrm) >= 2.4.75
-BuildRequires:  pkgconfig(libdrm_amdgpu) >= 2.4.95
-BuildRequires:  pkgconfig(libdrm_nouveau) >= 2.4.66
-BuildRequires:  pkgconfig(libdrm_radeon) >= 2.4.71
-BuildRequires:  pkgconfig(libglvnd) >= 0.1.0
-%ifarch aarch64 %{ix86} x86_64 ppc64le s390x
-BuildRequires:  pkgconfig(valgrind)
+BuildRequires: python-mako
+BuildRequires: pkgconfig(dri2proto)
+BuildRequires: pkgconfig(dri3proto)
+BuildRequires: pkgconfig(expat)
+BuildRequires: pkgconfig(glproto)
+BuildRequires: pkgconfig(libkms) >= 1.0.0
+BuildRequires: pkgconfig(libudev) > 151
+BuildRequires: pkgconfig(openssl)
+BuildRequires: pkgconfig(presentproto)
+%if !0%{?rhel_version}
+BuildRequires: pkgconfig(libva)
+BuildRequires: pkgconfig(vdpau) >= 1.1
+BuildRequires: pkgconfig(xcb-dri3)
+BuildRequires: pkgconfig(xcb-present)
+BuildRequires: pkgconfig(xshmfence)
+BuildRequires: pkgconfig(xvmc)
 %endif
-%if !0%{?suse_version} == 1699
-BuildRequires:  pkgconfig(libkms) >= 1.0.0
-%endif
-BuildRequires:  pkgconfig(libva)
-BuildRequires:  pkgconfig(presentproto)
-%if %{drivers}
-BuildRequires:  pkgconfig(vdpau) >= 1.1
-%endif
-BuildRequires:  pkgconfig(x11)
-BuildRequires:  pkgconfig(x11-xcb)
-BuildRequires:  pkgconfig(xcb-dri2)
-BuildRequires:  pkgconfig(xcb-dri3)
-BuildRequires:  pkgconfig(xcb-glx)
-BuildRequires:  pkgconfig(xcb-present)
-BuildRequires:  pkgconfig(xdamage)
-BuildRequires:  pkgconfig(xext)
-BuildRequires:  pkgconfig(xfixes)
-BuildRequires:  pkgconfig(xrandr)
-BuildRequires:  pkgconfig(xshmfence)
-BuildRequires:  pkgconfig(xvmc)
-BuildRequires:  pkgconfig(xxf86vm)
-BuildRequires:  pkgconfig(zlib)
-%ifarch %{arm} aarch64
-BuildRequires:  pkgconfig(libdrm_etnaviv) >= 2.4.89
-BuildRequires:  pkgconfig(libdrm_freedreno) >= 2.4.74
-BuildRequires:  pkgconfig(libelf)
-%endif
-%ifarch x86_64 %{ix86}
+BuildRequires: pkgconfig(x11)
+BuildRequires: pkgconfig(x11-xcb)
+BuildRequires: pkgconfig(xcb-dri2)
+BuildRequires: pkgconfig(xcb-glx)
+BuildRequires: pkgconfig(xdamage)
+BuildRequires: pkgconfig(xext)
+BuildRequires: pkgconfig(xfixes)
+BuildRequires: pkgconfig(xxf86vm)
+BuildRequires: pkgconfig(zlib)
+%ifarch x86_64 %ix86
 %if 0%{?fedora_version} || 0%{?rhel_version}
 BuildRequires: elfutils
 BuildRequires: elfutils-libelf-devel
@@ -527,43 +416,21 @@ BuildRequires: libelf-devel
 BuildRequires: pkgconfig(libdrm_intel) >= 2.4.75
 %endif
 %else
-%if 0%{with_opencl}
-BuildRequires:  libelf-devel
 %endif
-%endif
-# Requirements for wayland bumped up from 17.0
+%if 0%{?suse_version}>1320 || (0%{?sle_version}>=120300 && 0%{?is_opensuse}) || 0%{?scientificlinux_version}==700
+# needed by gtk3
 %if 0%{?scientificlinux_version}==700
 BuildRequires: wayland-devel
 %endif
-BuildRequires:  pkgconfig(wayland-client) >= 1.11
-BuildRequires:  pkgconfig(wayland-protocols) >= 1.8
-BuildRequires:  pkgconfig(wayland-server) >= 1.11
-%if 0%{with_llvm}
-%if 0%{?suse_version} >= 1550
-BuildRequires:  llvm-devel
-%else
-%if 0%{?sle_version} >= 150300
-BuildRequires:  llvm11-devel
-%else
-BuildRequires:  llvm9-devel
-%endif
+BuildRequires: pkgconfig(wayland-client) >= 1.11
+BuildRequires: pkgconfig(wayland-protocols) >= 1.8
+BuildRequires: pkgconfig(wayland-server) >= 1.11
 %endif
 %ifarch %ix86 x86_64
+%if !0%{?rhel_version} && !0%{?centos_version}
+BuildRequires: llvm-devel
+%endif
 BuildRequires: ncurses-devel
-%endif
-%endif
-# ---
-%if 0%{with_opencl}
-%if 0%{?suse_version} >= 1550
-BuildRequires:  clang-devel
-%else
-%if 0%{?sle_version} >= 150300
-BuildRequires:  clang11-devel
-%else
-BuildRequires:  clang9-devel
-%endif
-%endif
-BuildRequires:  libclc
 %endif
 %endif
 
@@ -720,10 +587,7 @@ for TarballFile in \
   ${SrcPath}/povray.tar.gz \
   ${SrcPath}/mesa-17.2.6.tar.gz \
   ${SrcPath}/mesa-18.3.5.tar.gz \
-  ${SrcPath}/mesa-21.3.9.tar.xz \
   ${SrcPath}/glu-9.0.0.tar.bz2 \
-  ${SrcPath}/glu-9.0.1.tar.xz \
-  ${SrcPath}/zstd-1.5.7.tar.gz \
   ${SrcPath}/qt5-5.9.3-gcc_64-el.tar.gz \
   ${SrcPath}/locallibs.el.x86_64.tar.gz; do
   LibFile="$(basename ${TarballFile})"
@@ -743,11 +607,6 @@ if [ -f "${SrcPath}/version.info" ]; then
 else
   echo "Error: ${SrcPath}/version.info not found."
 fi
-%if 0%{?suse_version}
-# apply suse_update_desktop_file diff
-categories="Categories=Graphics;3DGraphics;Publishing;Engineering;Graphics;Viewer;Education;"
-sed "s/Categories=.*/${categories}/" -i mainApp/lpub3d.desktop
-%endif
 set -x
 %if 0%{?buildservice}
 # OBS Platform id and version
@@ -795,15 +654,12 @@ export PLATFORM_VER=${PLATFORM_VER_OBS}
 set +x
 # 3rd-party renderers build-from-source requirements
 %if 0%{?build_osmesa}
-echo "Build OSMesa from source.......%([[ "%{mesa_amber}" == 1 ]] && echo Mesa-amber || echo Mesa)"
+echo "Build OSMesa from source.......yes"
 export build_osmesa=%{build_osmesa}
-%if 0%{?mesa_amber}
-export mesa_amber=%{mesa_amber}
 %endif
-echo "Build OSMesa with LLVM.........%([[ "%{with_llvm}" == 1 ]] && echo yes || echo no)"
-%if 0%{?with_llvm}
-export llvm_not_used=1
-%endif
+%if 0%{?no_gallium}
+echo "Gallium driver not available...yes"
+export no_gallium=%{no_gallium}
 %endif
 %if 0%{?build_sdl2}
 echo "Build SDL2 from source.........yes"
@@ -928,17 +784,17 @@ echo "ERROR - LDD check failed for $(realpath ${validexe})"
 
 %install
 make INSTALL_ROOT=%buildroot install
+%if 0%{?suse_version}
+%suse_update_desktop_file lpub3d Graphics 3DGraphics Publishing Viewer Education Engineering
+%endif
 %if 0%{?suse_version} || 0%{?sle_version}
 %fdupes %{buildroot}/%{_iconsdir}
 # skip rpath check on 3rd-party binaries to avoid 'RPATH "" ... is not allowed' fail on SUSE builds
 export NO_BRP_CHECK_RPATH=true
 %endif
 
-# this superfluous clean should not be used any longer. RPM provides its own clean logic
-%if 0%{?suse_version}<1699
 %clean
 rm -rf $RPM_BUILD_ROOT
-%endif
 
 %files
 %if 0%{?sle_version} || 0%{?suse_version}
@@ -950,9 +806,7 @@ rm -rf $RPM_BUILD_ROOT
 #  {_datadir}/metainfo/*
 %{_datadir}/mime/packages/*
 %{_datadir}/applications/*
-%if %([ "`ls -A %{_lp3d_3rd_exec_dir} 2>/dev/null`" ] && echo 1 || echo 0)
 %attr(755,-,-) %{_lp3d_3rd_exec_dir}/*
-%endif
 %attr(644,-,-) %{_mandir}/man1/*
 %attr(644,-,-) %doc %{_docdir}/lpub3d/*
 %attr(644,-,-) %{_iconsdir}/hicolor/scalable/mimetypes/*
@@ -977,7 +831,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Sun Jun 15 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4231
+* Mon Jun 16 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4232
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047

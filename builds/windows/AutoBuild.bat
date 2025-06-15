@@ -8,7 +8,7 @@ rem LPub3D distributions and package the build contents (exe, doc and
 rem resources ) for distribution release.
 rem --
 rem  Trevor SANDY <trevor.sandy@gmail.com>
-rem  Last Update: May 22, 2025
+rem  Last Update: April 15, 2025
 rem  Copyright (c) 2019 - 2025 by Trevor SANDY
 rem --
 rem This script is distributed in the hope that it will be useful,
@@ -214,8 +214,6 @@ SET INSTALL_64BIT=unknown
 SET PLATFORM_ARCH=unknown
 SET LDCONFIG_FILE=unknown
 SET CHECK=unknown
-SET LP3D_GITHUB_URL=https://github.com/trevorsandy
-SET LP3D_LIBS_BASE=%LP3D_GITHUB_URL%/lpub3d_libs/releases/download/v1.0.1
 
 FOR /F "tokens=3*" %%i IN ('findstr /c:"#define VER_PRODUCTNAME_STR" %ABS_WD%\mainApp\version.h') DO SET LP3D_PRODUCT=%%i
 SET PACKAGE=%LP3D_PRODUCT:"=%
@@ -1104,7 +1102,7 @@ EXIT /b
 
 :GET_OFFICIAL_LIBRARY
 SET WebCONTENT="%OutputPATH%\%OfficialCONTENT%"
-SET WebNAME=%LP3D_LIBS_BASE%/%OfficialCONTENT%
+SET WebNAME=https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/%OfficialCONTENT%
 
 ECHO.
 ECHO - Download archive file: %WebCONTENT%...
@@ -1118,7 +1116,7 @@ EXIT /b
 
 :GET_TENTE_LIBRARY
 SET WebCONTENT="%OutputPATH%\%TenteCONTENT%"
-SET WebNAME=%LP3D_LIBS_BASE%/%TenteCONTENT%
+SET WebNAME=https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/%TenteCONTENT%
 
 ECHO.
 ECHO - Download archive file: %WebCONTENT%...
@@ -1132,7 +1130,7 @@ EXIT /b
 
 :GET_VEXIQ_LIBRARY
 SET WebCONTENT="%OutputPATH%\%VexiqCONTENT%"
-SET WebNAME=%LP3D_LIBS_BASE%/%VexiqCONTENT%
+SET WebNAME=https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/%VexiqCONTENT%
 
 ECHO.
 ECHO - Download archive file: %WebCONTENT%...
@@ -1146,7 +1144,7 @@ EXIT /b
 
 :GET_UNOFFICIAL_LIBRARY
 SET WebCONTENT="%OutputPATH%\%LPub3DCONTENT%"
-SET WebNAME=%LP3D_LIBS_BASE%/%LPub3DCONTENT%
+SET WebNAME=https://github.com/trevorsandy/lpub3d_libs/releases/download/v1.0.1/%LPub3DCONTENT%
 
 ECHO.
 ECHO - Download archive file: %WebCONTENT%...
