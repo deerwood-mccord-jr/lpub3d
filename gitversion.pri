@@ -2,7 +2,7 @@
 VERSION = 2.4.9
 
 # Need to discard STDERR so get path to NULL device
-if (mingw:ide_qtcreator)|win32-msvc* {
+if (mingw:ide_qtcreator)|win32-arm64-msvc|win32-msvc* {
     NULL_DEVICE = NUL # Windows doesn't have /dev/null but has NUL
 } else {
     NULL_DEVICE = /dev/null
@@ -61,7 +61,7 @@ equals(GIT_DIR, undefined) {
 
     # Check if we do not have a valid version number (i.e. no version tag found)
     isEmpty(GIT_VERSION) {
-        GIT_REVISION = 342
+        GIT_REVISION = 343
         GIT_SHA      = $$system($$GIT_BASE_COMMAND rev-parse --short HEAD 2> $$NULL_DEVICE)
         GIT_COMMIT   = $$system($$GIT_BASE_COMMAND rev-list --count HEAD 2> $$NULL_DEVICE)
         GIT_VERSION  = v$${VERSION}-$${GIT_REVISION}-$${GIT_SHA}
@@ -90,7 +90,7 @@ equals(GIT_DIR, undefined) {
         # Get commit count
         GIT_COMMIT = $$system($$GIT_BASE_COMMAND rev-list --count HEAD 2> $$NULL_DEVICE)
         isEmpty(GIT_COMMIT) {
-            GIT_COMMIT = 4389
+            GIT_COMMIT = 4390
             message("~~~ ERROR LPUB3D! GIT_COMMIT NOT DEFINED, USING $$GIT_COMMIT ~~~")
         }
 
@@ -138,7 +138,7 @@ if (equals(USE_GIT_VER_FILE, true)|equals(USE_VERSION_INFO_VAR, true)) {
             GIT_VERSION = $$cat($$GIT_VER_FILE, lines)
         } else {
             message("~~~ ERROR LPUB3D! $$GIT_DIR_ENV VERSION_INFO FILE $$GIT_VER_FILE NOT FOUND ~~~")
-            GIT_VERSION = $${VERSION}.342.4389.28ca71f8d
+            GIT_VERSION = $${VERSION}.343.4390.fb8326bad
             message("~~~ $${LPUB3D} GIT_DIR [$$GIT_DIR_ENV, USING VERSION] $$GIT_VERSION ~~~")
             GIT_VERSION ~= s/\./" "
         }
