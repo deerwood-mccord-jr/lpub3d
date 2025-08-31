@@ -141,7 +141,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4303
+Version: 2.4.9.4304
 Release: <B_CNT>%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -239,11 +239,19 @@ BuildRequires: openssl-devel, storaged
 BuildRequires: freeglut-devel
 %endif
 BuildRequires: libqt5-qtbase-devel
+# exclude libOSMesa from openSUSE:Leap:Factory - suse_version 1699
+%if (0%{?suse_version}==1699)
+# set platform flags that will build OSMesa from Mesa-Amber - Mesa 21.3.9
+%define build_osmesa 1
+%define mesa_amber 1
+# LLVM is not needed for default OSMesa-amber configuration
+%define with_llvm 0
+%else
+BuildRequires: libOSMesa-devel
 # update_desktop_file is deprecated
-%if (!0%{?suse_version}<1699)
 BuildRequires: update-desktop-files
 %endif
-BuildRequires: libOSMesa-devel, glu-devel, openexr-devel
+BuildRequires: glu-devel, openexr-devel
 BuildRequires: libpng16-compat-devel, libjpeg8-devel
 BuildRequires: hostname
 BuildRequires: zlib-devel
@@ -969,7 +977,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Sun Aug 31 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4303
+* Sun Aug 31 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4304
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
