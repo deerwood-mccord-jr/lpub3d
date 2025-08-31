@@ -86,9 +86,9 @@
             <binary>lpub3d24</binary>
         ​</provides>
         <releases>
-            <release version="2.4.9.4323" date="2025-08-31">
+            <release version="2.4.9.4324" date="2025-08-31">
                 <description>
-                    <p>LPub3D 31.08.2025 v2.4.9 r276 Continuous Build.
+                    <p>LPub3D 31.08.2025 v2.4.9 r277 Continuous Build.
                         - Enhancement - Inconsistency with parts list shape inputs #805
                         - Enhancement - Set annotation style attributes from context menu action #812
                         - Enhancement - Update LDView renderer to version 4.6 #815
