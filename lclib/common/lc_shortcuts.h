@@ -50,3 +50,4 @@ extern lcMouseShortcuts gMouseShortcuts;
 void lcLoadDefaultMouseShortcuts();
 void lcSaveDefaultMouseShortcuts();
 void lcResetDefaultMouseShortcuts();
+
