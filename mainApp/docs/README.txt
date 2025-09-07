@@ -1,4 +1,4 @@
-LPub3D 2.4.9.425.4472 (07 09 2025 04:04:33)
+LPub3D 2.4.9.426.4473 (07 09 2025 04:06:29)
 
 Features, enhancements, fixes and changes
 ------------
@@ -21,6 +21,7 @@ Revisions:
 - HowTo - Set annotation style attributes #809
 - HowTo - Set theme check script in extras folder for Linux and macOS distros #806
 - Regression - Library Update failed #804
+- Fix - Adding Page Pointer causes Crash #818
 - Fix - Cannot edit AnnotationStyle list from menu action #810
 - Fix - PLI CONSTRAIN GLOBAL HEIGHT not applied #819
 - Fix - Pointer Tip of a page pointer cannot be hidden #813
