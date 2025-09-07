@@ -86,9 +86,9 @@
             <binary>lpub3d24</binary>
         ​</provides>
         <releases>
-            <release version="2.4.9.4473" date="2025-09-07">
+            <release version="2.4.9.4474" date="2025-09-07">
                 <description>
-                    <p>LPub3D 07.09.2025 v2.4.9 r426 Continuous Build.
+                    <p>LPub3D 07.09.2025 v2.4.9 r427 Continuous Build.
                         - Feature - Upgrade development platform to Qt 6.9 #820
                         - Enhancement - Inconsistency with parts list shape inputs #805
                         - Enhancement - Set annotation style attributes from context menu action #812
@@ -99,6 +99,7 @@
                         - Regression - Library Update failed #804
                         - Fix - Adding Page Pointer causes Crash #818
                         - Fix - Cannot edit AnnotationStyle list from menu action #810
+                        - Fix - PLI CONSTRAIN GLOBAL HEIGHT not applied #819
                         - Fix - Unexpected behaviour of the page pointer #823
                         - Fix - Pointer Tip of a page pointer cannot be hidden #813
                         - Fix - Submodel preview rotation #803

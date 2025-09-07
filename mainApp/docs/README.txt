@@ -1,4 +1,4 @@
-LPub3D 2.4.9.426.4473 (07 09 2025 04:06:29)
+LPub3D 2.4.9.427.4474 (07 09 2025 04:08:24)
 
 Features, enhancements, fixes and changes
 ------------
@@ -23,6 +23,7 @@ Revisions:
 - Regression - Library Update failed #804
 - Fix - Adding Page Pointer causes Crash #818
 - Fix - Cannot edit AnnotationStyle list from menu action #810
+- Fix - Crash on change meta command BOM MODEL_SCALE GLOBAL #808
 - Fix - PLI CONSTRAIN GLOBAL HEIGHT not applied #819
 - Fix - Pointer Tip of a page pointer cannot be hidden #813
 - Fix - Submodel preview rotation #803
