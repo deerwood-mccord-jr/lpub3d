@@ -82,7 +82,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4483
+Version: 2.4.9.4484
 Release: 1%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -172,7 +172,7 @@ set -x
 
 %build
 set +x
-echo "Current working directory: $PWD"
+echo "Build Working Directory: $PWD"
 [ -f "../../SOURCES/complete.zip" ] && SrcPath=../../SOURCES || SrcPath=../../../SOURCES
 # copy ldraw archive libraries
 for LDrawLibFile in \
@@ -187,7 +187,7 @@ for LDrawLibFile in \
       echo "Error: ${LibFile} copy to $(readlink -e ../) failed."
     fi
     mv -f ${LDrawLibFile} mainApp/extras/ || \
-	echo "Error: ${LibFile} move to $(readlink -e mainApp/extras) failed."
+      echo "Error: ${LibFile} move to $(readlink -e mainApp/extras) failed."
   else
     echo "Error: ${LDrawLibFile} not found."
   fi
@@ -224,10 +224,14 @@ export WD=$(readlink -e ../)
 %define _lp3d_log_path %(echo `pwd`)
 %define _lp3d_3rd_dist_dir %(echo lpub3d_linux_3rdparty)
 %endif
-export LP3D_LOG_PATH="%{_lp3d_log_path}"; \
-export LP3D_CPU_CORES="%{_lp3d_cpu_cores}"; \
-export LP3D_3RD_DIST_DIR="%{_lp3d_3rd_dist_dir}"; \
+export LP3D_LOG_PATH="%{_lp3d_log_path}"
+export LP3D_CPU_CORES="%{_lp3d_cpu_cores}"
+export LP3D_3RD_DIST_DIR="%{_lp3d_3rd_dist_dir}"
+# parent path for 3rdParty distribution directory
+export LP3D_DIST_DIR_PATH="$(cd ${SrcPath}/.. && pwd)"
 chmod a+x builds/utilities/CreateRenderers.sh && ./builds/utilities/CreateRenderers.sh
+# append 3rdParty distribution directory
+export LP3D_DIST_DIR_PATH="${LP3D_DIST_DIR_PATH}/${LP3D_3RD_DIST_DIR}"
 # Qt setup
 if which qmake6 >/dev/null 2>&1; then
   QMAKE_EXEC=qmake6
@@ -288,7 +292,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Tue Sep 09 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4483
+* Tue Sep 09 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4484
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
