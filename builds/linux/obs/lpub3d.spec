@@ -1,7 +1,7 @@
 #
 # spec file for LPub3D package
 #
-# Last Update: September 09, 2025
+# Last Update: September 10, 2025
 # Copyright © 2018 - 2025 Trevor SANDY
 # Using RPM Spec file examples by Thomas Baumgart, Peter Bartfai and others
 # This file and all modifications and additions to the pristine
@@ -82,7 +82,7 @@ BuildRequires: fdupes
 Summary: An LDraw Building Instruction Editor
 Name: lpub3d
 Icon: lpub3d.xpm
-Version: 2.4.9.4489
+Version: 2.4.9.4490
 Release: 1%{?dist}
 URL: https://trevorsandy.github.io/lpub3d
 Vendor: Trevor SANDY
@@ -292,7 +292,7 @@ update-desktop-database || true
 %endif
 
 %changelog
-* Tue Sep 09 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4489
+* Wed Sep 10 2025 - trevor.dot.sandy.at.gmail.dot.com 2.4.9.4490
 - LPub3D 2.4.9 enhancements and fixes - see RELEASE_NOTES for details
 
 * Tue Jan 07 2025 - trevor dot sandy at gmail dot com 2.4.9.4047
